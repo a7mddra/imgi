@@ -1,16 +1,19 @@
+// FILE: src/components/layout/AppLayout.tsx
+
 import React, { useState, useEffect } from "react";
 import "katex/dist/katex.min.css";
 import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
 import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
+import { Welcome } from "../../features/onboarding"; // Import Welcome
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 
 export const AppLayout: React.FC = () => {
-  // 1. Hook into System State (Settings, Theme, User)
+  // 1. Hook into System State
   const [isPanelActive, setIsPanelActive] = useState(false);
   const system = useSystemSync(() => setIsPanelActive(!isPanelActive));
 
-  // 2. Hook into Chat Engine
+  // 2. Chat Engine (only active if we have an image, essentially)
   const chatEngine = useChatEngine({
     apiKey: system.apiKey,
     currentModel: system.sessionModel,
@@ -21,10 +24,23 @@ export const AppLayout: React.FC = () => {
 
   // 3. Local Layout State
   const [input, setInput] = useState("");
-  const [showUpdate, setShowUpdate] = useState(false); // Mock update state
-
-  // Context Menu Logic
+  const [showUpdate, setShowUpdate] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
+
+  // --- Handlers ---
+  
+  // Called by Welcome Screen when user picks a file
+  const handleImageReady = (base64Full: string) => {
+    // Backend returns full data url: "data:image/png;base64,..."
+    // We split it for the system state
+    const [header, base64Data] = base64Full.split(',');
+    const mimeType = header.replace('data:', '').replace(';base64', '');
+    
+    system.setStartupImage({
+        base64: base64Full, // Keeping full string for img src
+        mimeType: mimeType
+    });
+  };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,12 +63,23 @@ export const AppLayout: React.FC = () => {
     return () => document.removeEventListener("click", handleClick);
   }, [contextMenu]);
 
+  // --- Render Logic ---
+
+  // If no image is loaded yet, show the Welcome/Upload screen
+  if (!system.startupImage) {
+    return (
+        <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
+            <Welcome onImageReady={handleImageReady} />
+        </div>
+    );
+  }
+
+  // Once image is loaded, show the Main Chat Interface
   return (
     <div
       onContextMenu={handleContextMenu}
       className="flex h-screen flex-col bg-neutral-950 text-neutral-100 selection:bg-black-500-30 selection:text-neutral-100"
     >
-      {/* 4. Pass everything to ChatLayout */}
       <ChatLayout
         // Chat State
         messages={chatEngine.messages}

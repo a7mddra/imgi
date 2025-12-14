@@ -11,7 +11,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CodeBlock } from "../CodeBlock/CodeBlock";
-import styles from "./StreamingResponse.module.css";
+import styles from "./ChatBubble.module.css";
 
 export const StreamingResponse: React.FC<{ text: string }> = ({ text }) => {
   const markdownComponents = useMemo(

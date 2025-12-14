@@ -11,7 +11,6 @@ import React, {
   forwardRef,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "../../../../../index.css";
 import "./SettingsPanel.css";
 import { GITHUB, MAILTO, MODELS, ModelType } from "../../types/settings.types"
 import { Dialog } from "../../../../components/ui/Dialogs/Dialog";

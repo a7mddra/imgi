@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { Message, ModelType } from "../types/chat.types";
 import { startNewChatStream, sendMessage } from "../../../lib/api/gemini/client";
-import systemPromptYaml from "../services/prompt.yml?raw";
+import systemPromptYaml from "../../../lib/config/prompts/system-prompt.yml?raw";
 
 export const useChatEngine = ({
   apiKey,

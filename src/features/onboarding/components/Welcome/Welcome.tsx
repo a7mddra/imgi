@@ -9,7 +9,8 @@ interface WelcomeProps {
   onImageReady: (base64: string) => void;
 }
 
-export default function Welcome({ onImageReady }: WelcomeProps) {
+// CHANGED: "export default function" -> "export const Welcome: React.FC<...>"
+export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,4 +149,4 @@ export default function Welcome({ onImageReady }: WelcomeProps) {
       </aside>
     </div>
   );
-}
+};

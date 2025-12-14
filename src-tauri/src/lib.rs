@@ -1,4 +1,117 @@
+// FILE: src-tauri/src/lib.rs
+
 use tauri_plugin_cli::CliExt;
+use tauri::{AppHandle, Emitter, Manager, State};
+use std::fs::File;
+use std::io::Read;
+use parking_lot::Mutex;
+use base64::{Engine as _, engine::general_purpose};
+use std::sync::Arc;
+
+// 1. Define AppState to hold the loaded image data
+struct AppState {
+    image_data: Arc<Mutex<Option<String>>>, // Stores "data:image/png;base64,..."
+}
+
+impl AppState {
+    fn new() -> Self {
+        Self {
+            image_data: Arc::new(Mutex::new(None)),
+        }
+    }
+}
+
+// 2. Helper Functions (as requested)
+fn process_and_store_image(path: &str, state: &State<AppState>) -> Result<String, String> {
+    let mut file = File::open(path).map_err(|e| format!("Failed to open file: {}", e))?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+
+    process_bytes_internal(buffer, state)
+}
+
+fn process_bytes_internal(
+    buffer: Vec<u8>,
+    state: &State<AppState>,
+) -> Result<String, String> {
+    if buffer.is_empty() {
+        return Err("Empty image buffer".to_string());
+    }
+
+    // Guess format or default to jpeg
+    let mime_type = image::guess_format(&buffer)
+        .map(|f| f.to_mime_type())
+        .unwrap_or("image/jpeg");
+
+    let base64_image = general_purpose::STANDARD.encode(&buffer);
+    let data_url = format!("data:{};base64,{}", mime_type, base64_image);
+
+    // Update state
+    let mut image_lock = state.image_data.lock();
+    *image_lock = Some(data_url.clone());
+
+    Ok(data_url)
+}
+
+// 3. Tauri Commands
+
+#[tauri::command]
+fn process_image_path(path: String, state: State<AppState>) -> Result<String, String> {
+    process_and_store_image(&path, &state)
+}
+
+#[tauri::command]
+fn process_image_bytes(bytes: Vec<u8>, state: State<AppState>) -> Result<String, String> {
+    process_bytes_internal(bytes, &state)
+}
+
+#[tauri::command]
+fn read_image_file(path: String, state: State<AppState>) -> Result<serde_json::Value, String> {
+    let base64 = process_and_store_image(&path, &state)?;
+    // Split mime and data for the frontend format
+    let parts: Vec<&str> = base64.splitn(2, ",").collect();
+    let mime_type = parts[0].replace("data:", "").replace(";base64", "");
+    
+    Ok(serde_json::json!({
+        "base64": base64, // sending full data url as base64 field for simplicity in this stage
+        "mimeType": mime_type
+    }))
+}
+
+// Stub commands to prevent frontend crashes
+#[tauri::command]
+fn get_api_key() -> String { "".to_string() }
+#[tauri::command]
+fn get_prompt() -> String { "".to_string() }
+#[tauri::command]
+fn get_model() -> String { "gemini-2.5-flash".to_string() }
+#[tauri::command]
+fn get_user_data() -> serde_json::Value { 
+    serde_json::json!({ "name": "Dev User", "email": "dev@local", "avatar": "" }) 
+}
+#[tauri::command]
+fn get_session_path() -> Option<String> { None }
+#[tauri::command]
+fn save_prompt(_prompt: String) {}
+#[tauri::command]
+fn save_model(_model: String) {}
+#[tauri::command]
+fn set_theme(_theme: String) {}
+#[tauri::command]
+fn clear_cache() {}
+#[tauri::command]
+fn open_external_url(_url: String) {}
+#[tauri::command]
+fn reset_prompt() -> String { "".to_string() }
+#[tauri::command]
+fn reset_model() -> String { "gemini-2.5-flash".to_string() }
+#[tauri::command]
+fn logout() {}
+#[tauri::command]
+fn reset_api_key() {}
+#[tauri::command]
+fn trigger_lens_search() {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -6,16 +119,48 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(AppState::new()) // Initialize State
+        .invoke_handler(tauri::generate_handler![
+            process_image_path,
+            process_image_bytes,
+            read_image_file,
+            get_api_key,
+            get_prompt,
+            get_model,
+            get_user_data,
+            get_session_path,
+            save_prompt,
+            save_model,
+            set_theme,
+            clear_cache,
+            open_external_url,
+            reset_prompt,
+            reset_model,
+            logout,
+            reset_api_key,
+            trigger_lens_search
+        ])
         .setup(|app| {
-            // Check for CLI args (e.g., file paths passed on startup)
+            // CLI Argument Handling
+            let handle = app.handle().clone();
+            
+            // We run this in a thread or match immediately. 
+            // Note: app.cli() might block slightly, but safe here.
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(arg) = matches.args.get("image") {
-                        println!("Image argument received: {:?}", arg.value);
-                        // Future: Emit event to frontend to load this image
+                        if let serde_json::Value::String(path) = &arg.value {
+                             println!("CLI Image argument received: {}", path);
+                             let state = handle.state::<AppState>();
+                             // Process immediately
+                             if let Ok(data_url) = process_and_store_image(path, &state) {
+                                // Emit event to frontend so it picks it up on mount
+                                let _ = handle.emit("image-path", path);
+                             }
+                        }
                     }
                 }
-                Err(_) => {}
+                Err(e) => println!("CLI Error: {}", e),
             }
             Ok(())
         })

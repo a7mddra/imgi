@@ -6,7 +6,7 @@
 
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import styles from "./LensButton.module.css";
+import styles from "./Button.module.css";
 
 interface LensButtonProps {
   isChatMode: boolean;

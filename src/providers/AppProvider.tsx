@@ -1,6 +1,6 @@
+// FILE: src/providers/AppProvider.tsx
 import React, { createContext, useContext, ReactNode } from 'react';
 
-// Simple context for now, we can expand later
 interface AppContextType {
   ready: boolean;
 }
