@@ -1,0 +1,28 @@
+@import './variables.css';
+@import './animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-950 text-neutral-100 antialiased;
+  }
+}
+
+/* Custom Scrollbar for the dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--neutral-900);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-800);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neutral-500);
+}
