@@ -6,7 +6,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import { MODELS } from "../../../../types";
+import { MODELS } from "../../types/chat.types";
+import styles from "./ChatHeader.module.css";
 
 interface ModelSelectorProps {
   currentModel: string;
@@ -61,12 +62,12 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={styles.selectorContainer} ref={dropdownRef}>
       <button
         ref={buttonRef}
         onClick={toggleOpen}
         disabled={isLoading}
-        className="flex items-center justify-between min-w-[92px] px-2 py-2 text-sm font-medium text-neutral-100 bg-transparent rounded-md transition-colors focus:outline-none disabled:opacity-50 hover:bg-neutral-900 focus:bg-neutral-900"
+        className={styles.selectorButton}
       >
         <span>
           {selectedModel?.id === "gemini-2.5-pro"
@@ -78,25 +79,24 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             : "Select Model"}
         </span>
         <ChevronDown
-          size={16}
-          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`${styles.chevron} ${isOpen ? styles.open : ""}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 w-44 mt-2 bg-neutral-950 border border-neutral-800 rounded-md shadow-lg">
-          <ul className="py-2">
+        <div className={styles.dropdownMenu}>
+          <ul className={styles.dropdownList}>
             {orderedModels.map((model) => (
               <li
                 key={model.id}
                 onClick={() => handleModelSelect(model.id)}
-                className={`flex items-center justify-between px-3 py-2 text-sm text-neutral-100 hover:bg-neutral-900 cursor-pointer rounded mx-1 ${
-                  model.id === currentModel ? "font-semibold" : ""
+                className={`${styles.dropdownItem} ${
+                  model.id === currentModel ? styles.selected : ""
                 }`}
               >
                 <span>{model.name}</span>
                 {model.id === currentModel && (
-                  <Check size={16} style={{ color: "var(--brand-primary)" }} />
+                  <Check size={16} className={styles.checkIcon} />
                 )}
               </li>
             ))}

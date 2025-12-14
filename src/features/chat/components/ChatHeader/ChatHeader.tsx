@@ -1,0 +1,150 @@
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { ForwardedRef } from "react";
+import { Settings, RotateCw } from "lucide-react";
+import { SettingsPanel } from "../../../settings/components/SettingsPanel/SettingsPanel";
+import { ModelSelector } from "./ModelSelector";
+import LensButton from "../../../lens/components/Button/Button";
+import styles from "./ChatHeader.module.css";
+
+interface ChatHeaderProps {
+  isPanelActive: boolean;
+  toggleSettingsPanel: () => void;
+  onReload: () => void;
+  isRotating: boolean;
+  isPanelVisible: boolean;
+  isPanelActiveAndVisible: boolean;
+  isPanelClosing: boolean;
+  settingsButtonRef: React.RefObject<HTMLButtonElement | null>;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  settingsPanelRef: ForwardedRef<{ handleClose: () => Promise<boolean> }>;
+  // Settings Panel Props
+  prompt: string;
+  editingModel: string;
+  setPrompt: (prompt: string) => void;
+  onEditingModelChange: (model: string) => void;
+  userName: string;
+  userEmail: string;
+  avatarSrc: string;
+  onSave: (prompt: string, model: string) => void;
+  onLogout: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
+  onResetAPIKey: () => void;
+  toggleSubview: (isActive: boolean) => void;
+  // Model Selector Props
+  currentModel: string;
+  onModelChange: (model: string) => void;
+  isLoading: boolean;
+  isChatMode: boolean;
+}
+
+export const ChatHeader: React.FC<ChatHeaderProps> = ({
+  isPanelActive,
+  toggleSettingsPanel,
+  onReload,
+  isRotating,
+  isPanelVisible,
+  isPanelActiveAndVisible,
+  isPanelClosing,
+  settingsButtonRef,
+  panelRef,
+  settingsPanelRef,
+  prompt,
+  editingModel,
+  setPrompt,
+  onEditingModelChange,
+  userName,
+  userEmail,
+  avatarSrc,
+  onSave,
+  onLogout,
+  isDarkMode,
+  onToggleTheme,
+  onResetAPIKey,
+  toggleSubview,
+  currentModel,
+  onModelChange,
+  isLoading,
+  isChatMode,
+}) => {
+  return (
+    <header className={styles.header}>
+      <div className={styles.leftSection}>
+        {/* Settings & Reload Group */}
+        <div className={styles.controlsWrapper}>
+          <button
+            ref={settingsButtonRef}
+            onClick={toggleSettingsPanel}
+            className={`${styles.iconButton} ${
+              isPanelActive ? styles.active : ""
+            }`}
+            title="Settings"
+          >
+            <Settings size={20} />
+          </button>
+          
+          <button
+            onClick={onReload}
+            className={styles.iconButton}
+            title="Reload chat"
+            disabled={isRotating}
+          >
+            <RotateCw
+              size={20}
+              className={isRotating ? styles.rotating : ""}
+            />
+          </button>
+
+          {isPanelVisible && (
+            <div
+              className={`${styles.panelWrapper} ${
+                isPanelActiveAndVisible ? styles.active : ""
+              } ${isPanelClosing ? styles.closing : ""}`}
+              id="panel"
+              ref={panelRef}
+            >
+              <div className={styles.panelContent} id="settings-content">
+                <SettingsPanel
+                  ref={settingsPanelRef}
+                  currentPrompt={prompt}
+                  currentModel={editingModel}
+                  onPromptChange={setPrompt}
+                  onModelChange={onEditingModelChange}
+                  userName={userName}
+                  userEmail={userEmail}
+                  avatarSrc={avatarSrc}
+                  onSave={onSave}
+                  onLogout={onLogout}
+                  isDarkMode={isDarkMode}
+                  onToggleTheme={onToggleTheme}
+                  onResetAPIKey={onResetAPIKey}
+                  toggleSubview={toggleSubview}
+                  toggleSettingsPanel={toggleSettingsPanel}
+                />
+              </div>
+              <div className={styles.panelFooter}>
+                <p>Spatialshot &copy; 2025</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Model Selector */}
+        <div>
+          <ModelSelector
+            currentModel={currentModel}
+            onModelChange={onModelChange}
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+
+      <LensButton isChatMode={isChatMode} />
+    </header>
+  );
+};
