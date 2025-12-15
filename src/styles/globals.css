@@ -1,28 +1,87 @@
 @import './variables.css';
 @import './animations.css';
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+* {
+  user-select: text !important;
+}
+
+body *::selection {
+  background: var(--blue) !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-neutral-950 text-neutral-100 antialiased;
-  }
+body.light-mode .shiki-dual-theme span,
+body.light-mode .shiki-dual-theme .shiki {
+  color: var(--shiki-light) !important;
+  background-color: transparent !important;
+  font-style: var(--shiki-light-font-style) !important;
+  font-weight: var(--shiki-light-font-weight) !important;
+  text-decoration: var(--shiki-light-text-decoration) !important;
 }
 
-/* Custom Scrollbar for the dark theme */
+.shiki-dual-theme span,
+.shiki-dual-theme .shiki {
+  color: var(--shiki-dark) !important;
+  background-color: transparent !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+.shiki-custom-render pre {
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", "Inter var", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--neutral-950);
+  color: #e5e5e5;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+body.light-mode {
+  color: #333333;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--neutral-900);
+  background: transparent;
+  transition: background-color 0.3s ease-in-out;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--neutral-800);
   border-radius: 4px;
+  transition: background-color 0.3s ease-in-out;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--neutral-500);
+  background: var(--neutral-900);
+}
+
+.token {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+  white-space: pre-wrap;
+}
+
+.token.show {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 140ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }

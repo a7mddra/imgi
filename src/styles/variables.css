@@ -1,42 +1,72 @@
 :root {
-  /* Neutral Scale */
-  --neutral-100: #f5f5f5;
-  --neutral-150: #e5e5e5;
-  --neutral-200: #d4d4d4;
-  --neutral-300: #a3a3a3;
-  --neutral-400: #737373;
-  --neutral-500: #525252;
-  --neutral-550: #404040;
-  --neutral-800: #262626;
-  --neutral-850: #1f1f1f;
-  --neutral-900: #171717;
+  font-family: "Inter", "Inter var", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --primary: #000000;
+  --danger: #d32f2f;
+  --success: #18221f;
+  --done: #181e22;
+  --dark: #0d1117;
+  --light: #dfe6ec;
+  --gray: #6a737d;
+  --blue: #46658380;
+  --overlay: #00000060;
+  --glow: #ffffff1f;
+  --border-radius: 12px;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  --transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --neutral-100: #d1d1d1;
+  --neutral-150: #b1b1b1;
+  --neutral-200: #cccccc;
+  --neutral-300: #b2b2b2;
+  --neutral-400: #999999;
+  --neutral-500: #808080;
+  --neutral-550: #ececec;
+  --neutral-750: #00000034;
+  --neutral-800: #333333;
+  --neutral-850: #101010;
+  --neutral-900: #1a1a1a;
   --neutral-950: #0a0a0a;
-
-  /* Brand */
-  --brand-primary: #3b82f6; /* Blue-500 as default */
-  
-  /* Functional Colors */
-  --glow: 0 0 20px rgba(59, 130, 246, 0.5);
-  --overlay: rgba(0, 0, 0, 0.7);
-  
-  /* Lens/UI Specific */
-  --lens-svg-color: #ffffff;
-  --lens-hover-bg: rgba(255, 255, 255, 0.1);
+  --red-200: #ffcccc;
+  --red-900-50: #ffc0c08e;
+  --red-500-60: #ff5e5ea1;
+  --brand-primary: #874dca;
+  --lens-svg-color: #8ab4f8;
+  --lens-hover-bg: rgba(138, 180, 248, 0.2);
   --lens-border-c1: #4285f4;
-  --lens-border-c2: #ea4335;
-  --lens-border-c3: #fbbc04;
-
-  /* Transparencies */
-  --black-500-30: rgba(0, 0, 0, 0.3);
-  --black-500-60: rgba(0, 0, 0, 0.6);
-  --black-500-20: rgba(0, 0, 0, 0.2);
-  
-  --red-200: #fecaca;
-  --red-900-50: rgba(127, 29, 29, 0.5);
-  --red-500-60: rgba(239, 68, 68, 0.6);
+  --lens-border-c2: #9b5de5;
+  --lens-border-c3: #f15bb5;
+  color: #e5e5e5;
+  background-color: var(--neutral-950);
 }
 
-.dark-mode {
-  /* Overrides for dark mode if necessary, 
-     though base variables seem designed for dark theme already */
+body.light-mode {
+  --primary: #f0f0f0;
+  --danger: #d32f2f;
+  --success: #aed6b1;
+  --done: #96bdda;
+  --dark: #f5f5f5;
+  --light: #333333;
+  --gray: #666666;
+  --blue: #6088b180;
+  --overlay: #00000036;
+  --glow: #00000071;
+  --red-200: #5c0000;
+  --red-900-50: #944c4c8e;
+  --red-500-60: #6e0000a1;
+  --neutral-100: #463c3c;
+  --neutral-150: #5c5c5c;
+  --neutral-200: #424242;
+  --neutral-300: #5e5e5e;
+  --neutral-400: #252525;
+  --neutral-500: #292929;
+  --neutral-550: #0c0c0c;
+  --neutral-750: #00000013;
+  --neutral-800: #e0e0e0;
+  --neutral-850: #f2f2f2;
+  --neutral-900: #f5f5f5;
+  --neutral-950: #ffffff;
+  --lens-svg-color: #4285f4;
+  --lens-hover-bg: rgba(66, 133, 244, 0.15);
+  color: #333333;
+  background-color: var(--neutral-950);
 }
