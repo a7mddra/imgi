@@ -16,6 +16,7 @@ import styles from "./SettingsPanel.module.css";
 import { GITHUB, MAILTO } from "../../types/settings.types";
 import { MODELS, ModelType } from "../../../../lib/config/models";
 import { Dialog } from "../../../../components/ui/Dialogs/Dialog";
+import { showToast } from "../../../../components/ui/Notifications/Toast";
 
 // Sub-components
 import { UserInfo } from "../UserProfile/UserProfile";
@@ -110,6 +111,7 @@ export const SettingsPanel = forwardRef<
       onSave(localPrompt, localModel);
       setIsSubviewActive(false);
       toggleSubview(false);
+      showToast("Settings saved", "done");
     };
 
     const handleClose = async (): Promise<boolean> => {
@@ -148,6 +150,7 @@ export const SettingsPanel = forwardRef<
 
     const handleClearCache = () => {
       invoke("clear_cache");
+      showToast("Cache cleared", "success");
     };
 
     const handleOpenExternalUrl = (url: string) => {

@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
+import { Copy, Check } from "lucide-react";
+import "./ContextMenu.css";
 
 interface ContextMenuProps {
   x: number;
@@ -22,7 +24,18 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onCopy,
   selectedText,
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
   if (!selectedText) return null;
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCopy();
+    setIsCopied(true);
+    setTimeout(() => {
+      onClose();
+    }, 500);
+  };
 
   // Use createPortal to render outside the main DOM hierarchy
   // allowing it to sit above everything else (MsgBox, Modals, etc.)
@@ -44,18 +57,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       {/* The actual menu */}
       <div
         id="app-context-menu"
-        className="fixed bg-neutral-800 border border-neutral-700 rounded-md shadow-2xl py-1 z-[9999] min-w-[120px]"
+        className="context-menu fixed z-[9999] min-w-[120px]"
         style={{ top: y, left: x }}
         onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to "outside click" listeners
       >
         <button
-          onClick={() => {
-            onCopy();
-            onClose();
-          }}
-          className="w-full text-left px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-700 hover:text-white transition-colors flex items-center gap-2"
+          onClick={handleCopy}
+          className="context-menu-item w-full text-left flex items-center gap-2"
         >
-           {/* You can add an icon here if you want */}
+           {isCopied ? <Check size={14} /> : <Copy size={14} />}
            <span>Copy</span>
         </button>
       </div>

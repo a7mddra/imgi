@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import "katex/dist/katex.min.css";
+import "../ui/Notifications/Toast.css";
 import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
 import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
 import { Welcome } from "../../features/onboarding"; // Import Welcome

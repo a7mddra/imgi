@@ -99,9 +99,16 @@ fn save_model(_model: String) {}
 #[tauri::command]
 fn set_theme(_theme: String) {}
 #[tauri::command]
-fn clear_cache() {}
+fn clear_cache(app: AppHandle) {
+    app.webview_windows().iter().for_each(|(_, window)| {
+        let _ = window.clear_all_browsing_data();
+    });
+}
+
 #[tauri::command]
-fn open_external_url(_url: String) {}
+fn open_external_url(url: String) {
+    let _ = opener::open(url);
+}
 #[tauri::command]
 fn reset_prompt() -> String { "".to_string() }
 #[tauri::command]

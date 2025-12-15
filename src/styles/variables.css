@@ -1,7 +1,7 @@
 :root {
-  font-family: "Inter", "Inter var", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  
-  /* Default to Dark Mode Colors */
+  font-family: "Inter", "Inter var", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+
   --neutral-100: #d1d1d1;
   --neutral-150: #b1b1b1;
   --neutral-200: #cccccc;
@@ -14,7 +14,7 @@
   --neutral-850: #101010;
   --neutral-900: #1a1a1a;
   --neutral-950: #0a0a0a;
-  
+
   --primary: #000000;
   --danger: #d32f2f;
   --success: #18221f;
@@ -28,31 +28,30 @@
   --border-radius: 12px;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
   --transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-  
+
   --red-200: #ffcccc;
   --red-900-50: #ffc0c08e;
   --red-500-60: #ff5e5ea1;
-  
-      --dialog-warning-icon-color: #fde68a; /* Default for dark mode (Tailwind amber-200) */
-  
-      --chat-input-border: rgba(255, 255, 255, 0.2); /* White-ish border for dark mode */
-  
-      --chat-input-focus-shadow: 0 0 15px rgba(255, 255, 255, 0.1); /* White glow for dark mode */
-  
-      --brand-primary: #874dca;
+
+  --dialog-warning-icon-color: #fde68a;
+
+  --chat-input-border: rgba(255, 255, 255, 0.2);
+
+  --chat-input-focus-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+
+  --brand-primary: #874dca;
   --lens-svg-color: #8ab4f8;
   --lens-hover-bg: rgba(138, 180, 248, 0.2);
   --lens-border-c1: #4285f4;
   --lens-border-c2: #9b5de5;
   --lens-border-c3: #f15bb5;
-  
+
   color: #e5e5e5;
   background-color: var(--neutral-950);
 }
 
-/* Light Mode Overrides */
-/* Applying to body.light-mode OR html.light */
-body.light-mode, html.light {
+body.light-mode,
+html.light {
   --neutral-100: #463c3c;
   --neutral-150: #5c5c5c;
   --neutral-200: #424242;
@@ -76,21 +75,18 @@ body.light-mode, html.light {
   --blue: #6088b180;
   --overlay: #00000036;
   --glow: #00000071;
-  
+
   --red-200: #5c0000;
   --red-900-50: #944c4c8e;
   --red-500-60: #6e0000a1;
-  
+
   --lens-svg-color: #4285f4;
   --lens-hover-bg: rgba(66, 133, 244, 0.15);
-  
-      --dialog-warning-icon-color: #d97706; /* Darker amber for light mode (Tailwind amber-600) */
-  
-      --chat-input-border: rgba(0, 0, 0, 0.2); /* Dark border for light mode */
-  
-      --chat-input-focus-shadow: 0 0 15px rgba(0, 0, 0, 0.15); /* Black shadow for light mode */
-  
-      color: #333333;
-  
-    background-color: var(--neutral-950);
+
+  --dialog-warning-icon-color: #d97706;
+  --chat-input-border: rgba(0, 0, 0, 0.2);
+  --chat-input-focus-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  color: #333333;
+
+  background-color: var(--neutral-950);
 }

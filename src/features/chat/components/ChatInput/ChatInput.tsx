@@ -245,16 +245,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       {/* Disclaimer / Links */}
       <div className={styles.disclaimer}>
         <span>AI responses may include mistakes. </span>
-        <button
-          onClick={() => {
-            invoke("open_external_url", {
-              url: "[https://support.google.com/websearch?p=ai_overviews](https://support.google.com/websearch?p=ai_overviews)",
-            });
-          }}
+        <a
+          href="https://support.google.com/websearch?p=ai_overviews"
           className={styles.link}
+          target="_blank"
+          rel="noopener noreferrer"
         >
           Learn more
-        </button>
+        </a>
       </div>
     </footer>
   );
