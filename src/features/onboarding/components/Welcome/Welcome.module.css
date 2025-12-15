@@ -1,5 +1,6 @@
-
-:root {
+/* CHANGE :root TO .container */
+.container {
+  /* Define variables directly on the container class */
   --radius: 12px;
   --bg: #f3f4f6;
   --card: #ffffff;
@@ -7,9 +8,28 @@
   --border: #e5e7eb;
   --accent: #111827;
   --dash: #d1d5db;
+
+  /* Keep your existing layout styles */
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  box-sizing: border-box;
+  
+  background: var(--card); /* This will now work */
+  color: var(--accent);    /* This ensures text is visible */
+  
+  padding: 48px;
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
 }
 
-:global(.dark-theme) {
+/* Update dark theme similarly */
+:global(.dark) .container {
   --bg: #121212;
   --card: #1e1e1e;
   --muted: #9a9ea1;
@@ -17,6 +37,8 @@
   --accent: #f3f4f6;
   --dash: #3d3d3d;
 }
+
+/* ... rest of the file ... */
 
 .container {
   /* Use viewport width/height to fill the window */

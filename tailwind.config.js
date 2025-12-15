@@ -1,16 +1,7 @@
-/**
- * @license
- * Copyright 2025 a7mddra
- * SPDX-License-Identifier: Apache-2.0
- */
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./index.html",
-    "./*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./services/**/*.{js,ts,jsx,tsx}",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
