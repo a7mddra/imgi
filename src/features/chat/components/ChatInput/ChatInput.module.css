@@ -40,15 +40,15 @@
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
 }
 
-.container.disabled {
+.disabled {
   opacity: 0.8;
 }
 
-.container.expandedLayout {
+.expandedLayout {
   flex-direction: column;
 }
 
-.container.standardLayout {
+.standardLayout {
   flex-direction: row;
   align-items: flex-end;
 }
@@ -118,7 +118,7 @@
   padding-right: 0.5rem;
 }
 
-.actions.expanded {
+.expanded {
   align-self: flex-end;
   justify-content: flex-end;
   width: 100%;
@@ -135,16 +135,16 @@
   background: transparent;
 }
 
-.sendButton.active {
+.active {
   cursor: pointer;
   color: var(--neutral-200);
 }
 
-.sendButton.active:hover {
+.active:hover {
   background-color: var(--neutral-800);
 }
 
-.sendButton.inactive {
+.inactive {
   cursor: default;
   opacity: 0.5;
   color: var(--neutral-500);

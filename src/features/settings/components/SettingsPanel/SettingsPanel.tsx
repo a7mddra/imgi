@@ -12,7 +12,8 @@ import React, {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./SettingsPanel.css";
-import { GITHUB, MAILTO, MODELS, ModelType } from "../../types/settings.types"
+import { GITHUB, MAILTO } from "../../types/settings.types";
+import { MODELS, ModelType } from "../../../../lib/config/models";
 import { Dialog } from "../../../../components/ui/Dialogs/Dialog";
 
 // Sub-components

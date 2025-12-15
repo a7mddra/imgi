@@ -6,7 +6,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import { MODELS } from "../../types/chat.types";
+import { MODELS } from "../../../../lib/config/models";
 import styles from "./ChatHeader.module.css";
 
 interface ModelSelectorProps {
