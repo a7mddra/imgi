@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import styles from "../SettingsPanel/SettingsPanel.module.css";
 
 interface UserInfoProps {
   userName: string;
@@ -37,13 +38,13 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   }, [userEmail]);
 
   return (
-    <div className="user-info">
-      <div className="user-info-main">
-        <img className="avatar" src={avatarSrc} alt="User avatar" />
-        <div className="user-details-wrapper">
-          <div className="user-details">
+    <div className={styles["user-info"]}>
+      <div className={styles["user-info-main"]}>
+        <img className={styles["avatar"]} src={avatarSrc} alt="User avatar" />
+        <div className={styles["user-details-wrapper"]}>
+          <div className={styles["user-details"]}>
             <h3>{userName}</h3>
-            <p ref={emailRef} className={isEmailOverflowing ? "marquee" : ""}>
+            <p ref={emailRef} className={isEmailOverflowing ? styles["marquee"] : ""}>
               {isEmailOverflowing ? (
                 <span>
                   {new Array(200).fill(userEmail).join("\u00A0\u00A0\u00A0")}
@@ -56,7 +57,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
         </div>
       </div>
       <button
-        className="logout-btn"
+        className={styles["logout-btn"]}
         title="Log Out"
         aria-label="Log out"
         onClick={onLogout}

@@ -33,8 +33,8 @@ export const useChatEngine = ({
   const clearError = () => setError(null);
 
   useEffect(() => {
-    if (apiKey && prompt && startupImage) {
-      startSession(apiKey, currentModel, startupImage);
+    if (startupImage && prompt) {
+      startSession(apiKey || "", currentModel, startupImage);
     }
   }, [apiKey, prompt, startupImage, currentModel]);
 
@@ -49,15 +49,29 @@ export const useChatEngine = ({
     imgData: { base64: string; mimeType: string } | null,
     isRetry = false
   ) => {
-    if (!key || !imgData || !prompt) return;
+    // Always start with loading true to show shimmer
+    setIsLoading(true);
+    setError(null);
 
     if (!isRetry) {
       resetInitialUi();
       setMessages([]);
-      setIsLoading(true);
-      setError(null);
       setFirstResponseId(null);
       setLastSentMessage(null);
+      
+      // Artificial delay to show shimmer effect on startup
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    if (!imgData || !prompt) {
+       setIsLoading(false);
+       return;
+    }
+
+    if (!key) {
+        setIsLoading(false);
+        setError("API Key not found. Please check your settings.");
+        return;
     }
 
     setIsStreaming(true);
@@ -102,6 +116,15 @@ export const useChatEngine = ({
       setIsStreaming(false);
       setIsLoading(false);
     }
+  };
+
+  const handleReload = () => {
+     if (apiKey && startupImage && prompt) {
+         startSession(apiKey, currentModel, startupImage, false);
+     } else if (!apiKey) {
+         // Re-trigger startSession to show error
+         startSession("", currentModel, startupImage, false);
+     }
   };
 
   const handleRetrySend = async () => {
@@ -187,6 +210,7 @@ export const useChatEngine = ({
     lastSentMessage,
     handleSend,
     handleRetrySend,
+    handleReload,
     startSession,
   };
 };

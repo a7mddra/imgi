@@ -23,3 +23,40 @@
   width: 90%;
   max-width: 400px;
 }
+
+/* Hover States - Dark Mode (Default) */
+.dialog-btn-secondary:hover {
+  background-color: #404040;
+  color: #f5f5f5;
+  border-color: #737373;
+}
+
+.dialog-btn-primary:hover {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.dialog-btn-danger:hover {
+  background-color: rgba(127, 29, 29, 0.5);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Hover States - Light Mode */
+body.light-mode .dialog-btn-secondary:hover {
+  background-color: #d1d1d1 !important;
+  color: #171717 !important;
+  border-color: #bbbbbb !important;
+}
+
+body.light-mode .dialog-btn-primary:hover {
+  background-color: #333333 !important;
+  color: #ffffff !important;
+  border-color: #333333 !important;
+}
+
+body.light-mode .dialog-btn-danger:hover {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.5) !important;
+  color: #991b1b !important;
+}

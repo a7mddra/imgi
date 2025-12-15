@@ -5,6 +5,7 @@
  */
 
 import React from "react";
+import styles from "../SettingsPanel/SettingsPanel.module.css";
 
 interface ModelInfo {
   id: string;
@@ -36,20 +37,20 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
   isRotating,
 }) => {
   return (
-    <div className={`subview ${isActive ? "active" : ""}`} id="promptView">
-      <div className="subview-header">
-        <button className="back-btn" id="backPromptBtn" onClick={onBack}>
+    <div className={`${styles["subview"]} ${isActive ? styles["active"] : ""}`} id="promptView">
+      <div className={styles["subview-header"]}>
+        <button className={styles["back-btn"]} id="backPromptBtn" onClick={onBack}>
           <i className="fas fa-arrow-left" />
         </button>
-        <button className="reset-btn" id="resetPromptBtn" onClick={onReset}>
+        <button className={styles["reset-btn"]} id="resetPromptBtn" onClick={onReset}>
           Reset{" "}
-          <i className={`fas fa-sync-alt ${isRotating ? "rotating" : ""}`} />
+          <i className={`fas fa-sync-alt ${isRotating ? styles["rotating"] : ""}`} />
         </button>
       </div>
-      <div className="subview-content">
+      <div className={styles["subview-content"]}>
         <label htmlFor="promptTextarea">Customize Prompt</label>
         <textarea
-          className="prompt-textarea"
+          className={styles["prompt-textarea"]}
           id="promptTextarea"
           placeholder="Write a prompt..."
           value={localPrompt}
@@ -58,22 +59,22 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
           }}
         />
 
-        <div className="form-group">
+        <div className={styles["form-group"]}>
           <label>Default Model</label>
-          <div className="model-switcher">
-            <div className="model-info">
-              <span className="model-name">{selectedModel?.name}</span>
-              <span className="model-description">
+          <div className={styles["model-switcher"]}>
+            <div className={styles["model-info"]}>
+              <span className={styles["model-name"]}>{selectedModel?.name}</span>
+              <span className={styles["model-description"]}>
                 {selectedModel?.description}
               </span>
             </div>
-            <button className="next-model-btn" onClick={onNextModel}>
+            <button className={styles["next-model-btn"]} onClick={onNextModel}>
               <i className="fas fa-chevron-right" />
             </button>
           </div>
         </div>
 
-        <button className="save-btn" id="saveBtn" onClick={onSave}>
+        <button className={styles["save-btn"]} id="saveBtn" onClick={onSave}>
           <i className="fas fa-save" /> Save
         </button>
       </div>

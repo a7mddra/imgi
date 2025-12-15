@@ -81,7 +81,7 @@ export const Dialog: React.FC<DialogProps> = ({
       case "error":
         return <AlertCircle size={18} className="text-red-200" />;
       case "warning":
-        return <AlertTriangle size={18} className="text-amber-200" />;
+        return <AlertTriangle size={18} className="text-dialogWarning" />;
       case "info":
         return <Info size={18} className="text-blue-200" />;
       case "update":
@@ -94,11 +94,11 @@ export const Dialog: React.FC<DialogProps> = ({
       "rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-200 disabled:opacity-50";
     switch (btnVariant) {
       case "danger":
-        return `${base} border-red-900/50 bg-red-950/30 text-red-200 hover:border-red-500/60 hover:bg-red-900/50`;
+        return `${base} dialog-btn-danger border-red-900/50 bg-red-950/30 text-red-200`;
       case "primary":
-        return `${base} border-neutral-600 bg-neutral-100 text-neutral-900 hover:bg-white hover:border-white shadow-[0_0_10px_rgba(255,255,255,0.1)]`;
+        return `${base} dialog-btn-primary border-neutral-600 bg-neutral-100 text-neutral-900 shadow-[0_0_10px_rgba(255,255,255,0.1)]`;
       default:
-        return `${base} border-neutral-700 bg-neutral-800 text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700 hover:border-neutral-500`;
+        return `${base} dialog-btn-secondary border-neutral-700 bg-neutral-800 text-neutral-300`;
     }
   };
 

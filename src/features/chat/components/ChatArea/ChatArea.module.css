@@ -99,11 +99,11 @@
   animation-delay: -0.6s;
 }
 
-body.light-mode .shimmer-line {
+body:global(.light-mode) .shimmer-line {
   background-color: #e5e5e5;
 }
 
-body.light-mode .shimmer-line-1 {
+body:global(.light-mode) .shimmer-line-1 {
   background-image: linear-gradient(
     to right,
     transparent 0%,
@@ -112,7 +112,7 @@ body.light-mode .shimmer-line-1 {
   );
 }
 
-body.light-mode .shimmer-line-2 {
+body:global(.light-mode) .shimmer-line-2 {
   background-image: linear-gradient(
     to right,
     rgba(252, 231, 243, 0) 0%,
@@ -121,7 +121,7 @@ body.light-mode .shimmer-line-2 {
   );
 }
 
-body.light-mode .shimmer-line-3 {
+body:global(.light-mode) .shimmer-line-3 {
   background-image: linear-gradient(
     to right,
     transparent 0%,
@@ -130,7 +130,7 @@ body.light-mode .shimmer-line-3 {
   );
 }
 
-body.light-mode .shimmer-line-4 {
+body:global(.light-mode) .shimmer-line-4 {
   background-image: linear-gradient(
     to right,
     rgba(252, 231, 243, 0) 0%,
@@ -139,7 +139,7 @@ body.light-mode .shimmer-line-4 {
   );
 }
 
-body.light-mode .shimmer-line-5 {
+body:global(.light-mode) .shimmer-line-5 {
   background-image: linear-gradient(
     to right,
     transparent 0%,
@@ -148,7 +148,7 @@ body.light-mode .shimmer-line-5 {
   );
 }
 
-body.light-mode .shimmer-line-6 {
+body:global(.light-mode) .shimmer-line-6 {
   background-image: linear-gradient(
     to right,
     rgba(252, 231, 243, 0) 0%,
@@ -157,7 +157,7 @@ body.light-mode .shimmer-line-6 {
   );
 }
 
-body.light-mode .shimmer-line-7 {
+body:global(.light-mode) .shimmer-line-7 {
   background-image: linear-gradient(
     to right,
     transparent 0%,
@@ -166,7 +166,7 @@ body.light-mode .shimmer-line-7 {
   );
 }
 
-body.light-mode .shimmer-line-8 {
+body:global(.light-mode) .shimmer-line-8 {
   background-image: linear-gradient(
     to right,
     rgba(252, 231, 243, 0) 0%,

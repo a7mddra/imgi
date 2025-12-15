@@ -20,7 +20,7 @@
   position: fixed;
   top: 80px;  /* Slightly lower to clear the header padding */
   left: 24px; /* Aligned to the left (matching header padding) */
-  width: 280px;
+  width: 250px;
   height: auto;
   background: var(--neutral-950);
   backdrop-filter: blur(20px);

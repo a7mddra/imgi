@@ -35,6 +35,7 @@ module.exports = {
                 '900-50': 'var(--red-900-50)',
                 '500-60': 'var(--red-500-60)',
             },
+            dialogWarning: 'var(--dialog-warning-icon-color)',
             brand: {
                 primary: 'var(--brand-primary)',
 

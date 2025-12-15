@@ -114,15 +114,24 @@ export const AppLayout: React.FC = () => {
         }}
         onModelChange={system.setSessionModel}
         onEditingModelChange={system.setEditingModel}
-        onRetry={chatEngine.handleRetrySend}
+        onRetry={() => {
+            if (chatEngine.messages.length === 0) {
+                chatEngine.handleReload();
+            } else {
+                chatEngine.handleRetrySend();
+            }
+        }}
         onSave={system.saveSettings}
         onLogout={system.handleLogout}
         onToggleTheme={system.handleToggleTheme}
-        onCheckSettings={() => setIsPanelActive(true)}
+        onCheckSettings={() => {
+            setIsPanelActive(true);
+            chatEngine.clearError();
+        }}
         toggleSettingsPanel={() => setIsPanelActive(!isPanelActive)}
         isPanelActive={isPanelActive}
         onResetAPIKey={system.handleResetAPIKey}
-        onReload={() => window.location.reload()} 
+        onReload={chatEngine.handleReload} 
       />
       
       <div id="toast" className="toast"></div>

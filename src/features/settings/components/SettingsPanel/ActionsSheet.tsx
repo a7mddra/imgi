@@ -5,6 +5,7 @@
  */
 
 import React from "react";
+import styles from "./SettingsPanel.module.css";
 
 interface MainActionsProps {
   isDarkMode: boolean;
@@ -26,58 +27,58 @@ export const MainActions: React.FC<MainActionsProps> = ({
   onOpenSubview,
 }) => {
   return (
-    <div className="button-group">
-      <button className="btn" id="darkModeBtn" onClick={onToggleTheme}>
-        <div className="btn-content">
+    <div className={styles["button-group"]}>
+      <button className={styles["btn"]} id="darkModeBtn" onClick={onToggleTheme}>
+        <div className={styles["btn-content"]}>
           <i className="fas fa-moon" />
-          <div className="btn-text">Dark Mode</div>
+          <div className={styles["btn-text"]}>Dark Mode</div>
         </div>
-        <label className="toggle" onClick={(e) => e.stopPropagation()}>
+        <label className={styles["toggle"]} onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             id="darkModeToggle"
             checked={isDarkMode}
             onChange={onToggleTheme}
           />
-          <span className="toggle-slider" />
+          <span className={styles["toggle-slider"]} />
         </label>
       </button>
 
-      <button className="btn" id="clearCacheBtn" onClick={onClearCache}>
-        <div className="btn-content">
+      <button className={styles["btn"]} id="clearCacheBtn" onClick={onClearCache}>
+        <div className={styles["btn-content"]}>
           <i className="fas fa-broom" />
-          <div className="btn-text">Clear Cache</div>
+          <div className={styles["btn-text"]}>Clear Cache</div>
         </div>
       </button>
 
-      <button className="btn" onClick={onReportBug}>
-        <div className="btn-content">
+      <button className={styles["btn"]} onClick={onReportBug}>
+        <div className={styles["btn-content"]}>
           <i className="fas fa-bug" />
-          <div className="btn-text">Report Bug</div>
+          <div className={styles["btn-text"]}>Report Bug</div>
         </div>
       </button>
 
-      <button className="btn" id="resetAPIKeyBtn" onClick={onResetAPIKey}>
-        <div className="btn-content">
+      <button className={styles["btn"]} id="resetAPIKeyBtn" onClick={onResetAPIKey}>
+        <div className={styles["btn-content"]}>
           <i className="fas fa-key" />
-          <div className="btn-text">Reset API Key</div>
+          <div className={styles["btn-text"]}>Reset API Key</div>
         </div>
       </button>
 
-      <button className="btn" id="promptBtn" onClick={onOpenSubview}>
-        <div className="btn-content">
+      <button className={styles["btn"]} id="promptBtn" onClick={onOpenSubview}>
+        <div className={styles["btn-content"]}>
           <i className="fas fa-edit" />
-          <div className="btn-text">Personal Context</div>
+          <div className={styles["btn-text"]}>Personal Context</div>
         </div>
-        <div className="btn-arrow">
+        <div className={styles["btn-arrow"]}>
           <i className="fas fa-chevron-right" />
         </div>
       </button>
 
-      <button className="btn" onClick={onOpenGithub}>
-        <div className="btn-content">
+      <button className={styles["btn"]} onClick={onOpenGithub}>
+        <div className={styles["btn-content"]}>
           <i className="fab fa-github" />
-          <div className="btn-text">GitHub Repository</div>
+          <div className={styles["btn-text"]}>GitHub Repository</div>
         </div>
       </button>
     </div>

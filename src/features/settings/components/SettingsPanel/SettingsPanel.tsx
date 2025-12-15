@@ -12,7 +12,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
-import "./SettingsPanel.css";
+import styles from "./SettingsPanel.module.css";
 import { GITHUB, MAILTO } from "../../types/settings.types";
 import { MODELS, ModelType } from "../../../../lib/config/models";
 import { Dialog } from "../../../../components/ui/Dialogs/Dialog";
@@ -191,7 +191,7 @@ export const SettingsPanel = forwardRef<
       <>
         {/* Overlay to catch clicks outside and close safely */}
         <div
-          className="settings-overlay"
+          className={styles["settings-overlay"]}
           onClick={(e) => {
             e.stopPropagation();
             handleClose().then((canClose) => {
@@ -201,12 +201,12 @@ export const SettingsPanel = forwardRef<
         />
 
         <div
-          className={`settings-panel ${isOpen ? "active" : ""} ${
-            isClosing ? "closing" : ""
-          } ${isSubviewActive ? "subview-active" : ""}`}
+          className={`${styles["settings-panel"]} ${isOpen ? styles["active"] : ""} ${
+            isClosing ? styles["closing"] : ""
+          } ${isSubviewActive ? styles["subview-active"] : ""}`}
           id="panel"
         >
-          <div className="panel-content" id="settings-content">
+          <div className={styles["panel-content"]} id="settings-content">
             <Dialog
               isOpen={showUnsavedDialog}
               variant="warning"
@@ -256,7 +256,7 @@ export const SettingsPanel = forwardRef<
             />
           </div>
           
-          <div className="footer">
+          <div className={styles["footer"]}>
             <p>Spatialshot &copy; 2025</p>
           </div>
         </div>
