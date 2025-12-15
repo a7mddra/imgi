@@ -7,13 +7,18 @@ import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
 import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
 import { Welcome } from "../../features/onboarding"; // Import Welcome
 import { Agreement } from "../../features/onboarding/components/Agreement/Agreement";
+import { UpdateNotes } from "../../features/onboarding/components/UpdateNotes/UpdateNotes";
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
+import { useUpdateCheck, getPendingUpdate, clearPendingUpdate } from "../../hooks/useUpdateCheck";
 
 export const AppLayout: React.FC = () => {
   // 1. Hook into System State
   const [isPanelActive, setIsPanelActive] = useState(false);
   const system = useSystemSync(() => setIsPanelActive(!isPanelActive));
+
+  // Run background update check for *next* session
+  useUpdateCheck();
 
   // 2. Chat Engine (only active if we have an image, essentially)
   const chatEngine = useChatEngine({
@@ -26,7 +31,11 @@ export const AppLayout: React.FC = () => {
 
   // 3. Local Layout State
   const [input, setInput] = useState("");
-  const [showUpdate, setShowUpdate] = useState(false);
+  
+  // Initialize update state based on storage
+  const [pendingUpdate] = useState(() => getPendingUpdate());
+  const [showUpdate, setShowUpdate] = useState(!!pendingUpdate);
+  
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
   const [hasAgreed, setHasAgreed] = useState(false);
 
@@ -67,6 +76,21 @@ export const AppLayout: React.FC = () => {
   }, [contextMenu]);
 
   // --- Render Logic ---
+
+  if (showUpdate && pendingUpdate) {
+    return (
+      <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
+        <UpdateNotes 
+          version={pendingUpdate.version}
+          notes={pendingUpdate.notes}
+          onClose={() => {
+            clearPendingUpdate();
+            setShowUpdate(false);
+          }} 
+        />
+      </div>
+    );
+  }
 
   if (!hasAgreed) {
     const getOSType = () => {

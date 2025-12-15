@@ -120,9 +120,16 @@ fn reset_api_key() {}
 #[tauri::command]
 fn trigger_lens_search() {}
 
+#[tauri::command]
+fn log_to_terminal(message: String) {
+    println!("{}", message);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_fs::init())
@@ -145,7 +152,8 @@ pub fn run() {
             reset_model,
             logout,
             reset_api_key,
-            trigger_lens_search
+            trigger_lens_search,
+            log_to_terminal
         ])
         .setup(|app| {
             // CLI Argument Handling
@@ -160,7 +168,7 @@ pub fn run() {
                              println!("CLI Image argument received: {}", path);
                              let state = handle.state::<AppState>();
                              // Process immediately
-                             if let Ok(data_url) = process_and_store_image(path, &state) {
+                             if let Ok(_data_url) = process_and_store_image(path, &state) {
                                 // Emit event to frontend so it picks it up on mount
                                 let _ = handle.emit("image-path", path);
                              }
