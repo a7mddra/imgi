@@ -88,7 +88,7 @@ fn get_prompt() -> String { "".to_string() }
 fn get_model() -> String { "gemini-2.5-flash".to_string() }
 #[tauri::command]
 fn get_user_data() -> serde_json::Value { 
-    serde_json::json!({ "name": "Dev User", "email": "dev@local", "avatar": "" }) 
+    serde_json::json!({ "name": "Dev User", "email": "dev@lochhhhhhhhhuhuuhuhuhuhal", "avatar": "" }) 
 }
 #[tauri::command]
 fn get_session_path() -> Option<String> { None }

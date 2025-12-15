@@ -10,6 +10,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
+import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import "./SettingsPanel.css";
 import { GITHUB, MAILTO } from "../../types/settings.types";
@@ -22,6 +23,8 @@ import { MainActions } from "./ActionsSheet";
 import { PersonalContext } from "../Personalization/Personalization";
 
 interface SettingsPanelProps {
+  isOpen: boolean;
+  isClosing: boolean;
   currentPrompt: string;
   currentModel: string;
   userName: string;
@@ -59,6 +62,8 @@ export const SettingsPanel = forwardRef<
 >(
   (
     {
+      isOpen,
+      isClosing,
       currentPrompt,
       currentModel,
       userName,
@@ -181,63 +186,82 @@ export const SettingsPanel = forwardRef<
       }
     };
 
-    // --- Render ---
-    return (
-      <div
-        className={`settings-panel ${isSubviewActive ? "subview-active" : ""}`}
-      >
-        <Dialog
-          isOpen={showUnsavedDialog}
-          variant="warning"
-          title="Unsaved Changes"
-          message="Do you want to save your last changes ?"
-          actions={[
-            {
-              label: "Discard",
-              onClick: handleDialogDiscard,
-              variant: "secondary",
-            },
-            {
-              label: "Save",
-              onClick: handleDialogSave,
-              variant: "primary",
-            },
-          ]}
+    // --- Render with Portal to fix Z-Index issues ---
+    return createPortal(
+      <>
+        {/* Overlay to catch clicks outside and close safely */}
+        <div
+          className="settings-overlay"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClose().then((canClose) => {
+              if (canClose) toggleSettingsPanel();
+            });
+          }}
         />
 
-        <UserInfo
-          userName={userName}
-          userEmail={userEmail}
-          avatarSrc={avatarSrc}
-          onLogout={onLogout}
-        />
+        <div
+          className={`settings-panel ${isOpen ? "active" : ""} ${
+            isClosing ? "closing" : ""
+          } ${isSubviewActive ? "subview-active" : ""}`}
+          id="panel"
+        >
+          <div className="panel-content" id="settings-content">
+            <Dialog
+              isOpen={showUnsavedDialog}
+              variant="warning"
+              title="Unsaved Changes"
+              message="Do you want to save your last changes ?"
+              actions={[
+                {
+                  label: "Discard",
+                  onClick: handleDialogDiscard,
+                  variant: "secondary",
+                },
+                {
+                  label: "Save",
+                  onClick: handleDialogSave,
+                  variant: "primary",
+                },
+              ]}
+            />
 
-        <MainActions
-          isDarkMode={isDarkMode}
-          onToggleTheme={onToggleTheme}
-          onClearCache={handleClearCache}
-          onResetAPIKey={onResetAPIKey}
-          onOpenSubview={handleOpenSubview}
-          onReportBug={() =>
-            handleOpenExternalUrl(MAILTO)
-          }
-          onOpenGithub={() =>
-            handleOpenExternalUrl(GITHUB)
-          }
-        />
+            <UserInfo
+              userName={userName}
+              userEmail={userEmail}
+              avatarSrc={avatarSrc}
+              onLogout={onLogout}
+            />
 
-        <PersonalContext
-          isActive={isSubviewActive}
-          localPrompt={localPrompt}
-          setLocalPrompt={setLocalPrompt}
-          selectedModel={selectedModel}
-          onNextModel={handleNextModel}
-          onBack={handleBackPress}
-          onReset={handleReset}
-          onSave={handleSave}
-          isRotating={isRotating}
-        />
-      </div>
+            <MainActions
+              isDarkMode={isDarkMode}
+              onToggleTheme={onToggleTheme}
+              onClearCache={handleClearCache}
+              onResetAPIKey={onResetAPIKey}
+              onOpenSubview={handleOpenSubview}
+              onReportBug={() => handleOpenExternalUrl(MAILTO)}
+              onOpenGithub={() => handleOpenExternalUrl(GITHUB)}
+            />
+
+            <PersonalContext
+              isActive={isSubviewActive}
+              localPrompt={localPrompt}
+              setLocalPrompt={setLocalPrompt}
+              selectedModel={selectedModel}
+              onNextModel={handleNextModel}
+              onBack={handleBackPress}
+              onReset={handleReset}
+              onSave={handleSave}
+              isRotating={isRotating}
+            />
+          </div>
+          
+          <div className="footer">
+            <p>Spatialshot &copy; 2025</p>
+          </div>
+        </div>
+      </>,
+      document.body
     );
   }
 );

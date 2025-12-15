@@ -100,37 +100,27 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             />
           </button>
 
+          {/* Render SettingsPanel directly via Portal */}
           {isPanelVisible && (
-            <div
-              className={`${styles.panelWrapper} ${
-                isPanelActiveAndVisible ? styles.active : ""
-              } ${isPanelClosing ? styles.closing : ""}`}
-              id="panel"
-              ref={panelRef}
-            >
-              <div className={styles.panelContent} id="settings-content">
-                <SettingsPanel
-                  ref={settingsPanelRef}
-                  currentPrompt={prompt}
-                  currentModel={editingModel}
-                  onPromptChange={setPrompt}
-                  onModelChange={onEditingModelChange}
-                  userName={userName}
-                  userEmail={userEmail}
-                  avatarSrc={avatarSrc}
-                  onSave={onSave}
-                  onLogout={onLogout}
-                  isDarkMode={isDarkMode}
-                  onToggleTheme={onToggleTheme}
-                  onResetAPIKey={onResetAPIKey}
-                  toggleSubview={toggleSubview}
-                  toggleSettingsPanel={toggleSettingsPanel}
-                />
-              </div>
-              <div className={styles.panelFooter}>
-                <p>Spatialshot &copy; 2025</p>
-              </div>
-            </div>
+            <SettingsPanel
+              ref={settingsPanelRef}
+              isOpen={isPanelActiveAndVisible}
+              isClosing={isPanelClosing}
+              currentPrompt={prompt}
+              currentModel={editingModel}
+              onPromptChange={setPrompt}
+              onModelChange={onEditingModelChange}
+              userName={userName}
+              userEmail={userEmail}
+              avatarSrc={avatarSrc}
+              onSave={onSave}
+              onLogout={onLogout}
+              isDarkMode={isDarkMode}
+              onToggleTheme={onToggleTheme}
+              onResetAPIKey={onResetAPIKey}
+              toggleSubview={toggleSubview}
+              toggleSettingsPanel={toggleSettingsPanel}
+            />
           )}
         </div>
 
