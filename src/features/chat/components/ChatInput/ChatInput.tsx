@@ -98,6 +98,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       ta.style.height = `${scrollHeight}px`;
       ta.style.overflowY = "hidden";
     }
+
+    // Ensure we start at the top when manually expanded
+    if (isManualExpanded) {
+        ta.scrollTop = 0;
+    }
   };
 
   useLayoutEffect(() => {
@@ -205,7 +210,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             disabled={disabled}
             rows={1}
             className={styles.textarea}
-            style={{ width: isExpandedLayout ? "calc(100% - 1rem)" : "100%" }}
+            style={{ width: isExpandedLayout ? "calc(100% - 2rem)" : "100%" }}
           />
 
           {isCodeBlockActive && (

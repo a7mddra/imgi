@@ -31,13 +31,13 @@
   padding: 0.5rem;
   background-color: transparent;
   border-radius: 1.5rem;
-  border: 1px solid var(--neutral-700);
+  border: 1px solid var(--chat-input-border);
   transition: all 0.2s ease;
 }
 
 .container:focus-within {
   border-color: var(--neutral-500);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+  box-shadow: var(--chat-input-focus-shadow);
 }
 
 .disabled {
