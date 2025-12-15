@@ -72,7 +72,7 @@ export const Agreement: React.FC<AgreementProps> = ({
       }
       onPrimaryAction={handleNext}
       disablePrimary={!isAgreed || isSaving}
-      primaryLabel={isSaving ? "Saving..." : "Next"}
+      primaryLabel={isSaving ? "Initializing..." : "Next"}
       onSecondaryAction={onCancel}
       secondaryLabel="Cancel"
     >
