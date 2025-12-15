@@ -6,6 +6,7 @@ import "../ui/Notifications/Toast.css";
 import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
 import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
 import { Welcome } from "../../features/onboarding"; // Import Welcome
+import { Agreement } from "../../features/onboarding/components/Agreement/Agreement";
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 
@@ -27,6 +28,7 @@ export const AppLayout: React.FC = () => {
   const [input, setInput] = useState("");
   const [showUpdate, setShowUpdate] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
+  const [hasAgreed, setHasAgreed] = useState(false);
 
   // --- Handlers ---
   
@@ -65,6 +67,25 @@ export const AppLayout: React.FC = () => {
   }, [contextMenu]);
 
   // --- Render Logic ---
+
+  if (!hasAgreed) {
+    const getOSType = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      if (userAgent.includes("win")) return "windows";
+      if (userAgent.includes("mac")) return "macos";
+      return "linux";
+    };
+
+    return (
+      <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
+        <Agreement 
+          osType={getOSType()} 
+          onNext={() => setHasAgreed(true)} 
+          onCancel={() => {}} 
+        />
+      </div>
+    );
+  }
 
   // If no image is loaded yet, show the Welcome/Upload screen
   if (!system.startupImage) {

@@ -45,7 +45,7 @@ export const UpdateNotes: React.FC<UpdateNotesProps> = ({ onClose }) => {
       description="Check out the latest features and improvements."
       icon={
         <img
-          src="/assets/steps/emoji_u1f6e0.png" 
+          src="/assets/emoji_u1f4e6.png" 
           /* Ensure you have a 'party popper' or similar icon asset, 
              or use a generic one */
           className={styles.iconImage}

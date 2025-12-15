@@ -39,4 +39,4 @@ To prevent "black screen" captures and ensure hotkey responsiveness, you must gr
 
 ---
 
-*By installing this software, you agree to the [Apache 2.0 License](https://github.com/a7mddra/spatialshot?tab=Apache-2.0-1-ov-file#readme).*
+*By installing this software, you agree to the **[Apache 2.0 License](https://github.com/a7mddra/spatialshot?tab=Apache-2.0-1-ov-file#readme)**.*

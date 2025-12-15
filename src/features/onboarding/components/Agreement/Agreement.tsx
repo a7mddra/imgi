@@ -30,7 +30,7 @@ export const Agreement: React.FC<AgreementProps> = ({
   useEffect(() => {
     // Fetch instructions from public/data/instructions/{os}.md
     // Adjust path based on your actual public folder structure
-    fetch(`/instructions/${osType}.md`)
+    fetch(`/data/instructions/${osType}.md`)
       .then((res) => {
         if (!res.ok) throw new Error("Instruction file not found");
         return res.text();
@@ -48,7 +48,7 @@ export const Agreement: React.FC<AgreementProps> = ({
       description="Please review the following instructions carefully."
       icon={
         <img
-          src="/assets/steps/emoji_u1f4c4.png"
+          src="/assets/emoji_u1f6e0.png"
           className={styles.iconImage}
           alt="Guide"
         />
