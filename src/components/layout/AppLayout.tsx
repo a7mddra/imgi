@@ -10,7 +10,8 @@ import { Agreement } from "../../features/onboarding/components/Agreement/Agreem
 import { UpdateNotes } from "../../features/onboarding/components/UpdateNotes/UpdateNotes";
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
-import { useUpdateCheck, getPendingUpdate, clearPendingUpdate } from "../../hooks/useUpdateCheck";
+import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
+import { exit } from "@tauri-apps/plugin-process";
 
 export const AppLayout: React.FC = () => {
   // 1. Hook into System State
@@ -84,7 +85,6 @@ export const AppLayout: React.FC = () => {
           version={pendingUpdate.version}
           notes={pendingUpdate.notes}
           onClose={() => {
-            clearPendingUpdate();
             setShowUpdate(false);
           }} 
         />
@@ -105,7 +105,7 @@ export const AppLayout: React.FC = () => {
         <Agreement 
           osType={getOSType()} 
           onNext={() => setHasAgreed(true)} 
-          onCancel={() => {}} 
+          onCancel={() => exit(0)} 
         />
       </div>
     );

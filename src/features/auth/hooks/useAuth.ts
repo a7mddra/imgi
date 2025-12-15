@@ -9,5 +9,5 @@ export const useAuth = () => {
   const login = () => setIsAuthenticated(true);
   const logout = () => setIsAuthenticated(false);
 
-  return { isAuthenticated, isLoading, login, logout, user: { name: "Dev Architect", email: "deffffgtrgrgtrgtrgtgtgtgtgtrgtgtrv@imgi.app" } };
+  return { isAuthenticated, isLoading, login, logout, user: { name: "Dev Architect", email: "deffffgtrgrgtrgtrgtgtgtgtgtrgtgtrv@spatialshot.app" } };
 };

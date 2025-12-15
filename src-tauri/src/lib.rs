@@ -120,11 +120,6 @@ fn reset_api_key() {}
 #[tauri::command]
 fn trigger_lens_search() {}
 
-#[tauri::command]
-fn log_to_terminal(message: String) {
-    println!("{}", message);
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -152,8 +147,7 @@ pub fn run() {
             reset_model,
             logout,
             reset_api_key,
-            trigger_lens_search,
-            log_to_terminal
+            trigger_lens_search
         ])
         .setup(|app| {
             // CLI Argument Handling

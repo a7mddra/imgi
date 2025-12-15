@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { invoke } from "@tauri-apps/api/core";
 import { fetchReleaseNotes } from '../features/onboarding/services/releaseNotes';
 
 const STORAGE_KEYS = {
@@ -8,31 +7,24 @@ const STORAGE_KEYS = {
   AVAILABLE: 'pending_update_available',
 };
 
-function log(message: string) {
-  invoke("log_to_terminal", { message }).catch(() => {});
-}
-
 export function useUpdateCheck() {
   useEffect(() => {
     const checkUpdate = async () => {
-      log("[UpdateCheck] Starting background check...");
       try {
         const { hasUpdate, version, notes } = await fetchReleaseNotes();
         
         if (hasUpdate) {
-          log(`[UpdateCheck] Update found! Storing for next launch. Version: ${version}`);
           localStorage.setItem(STORAGE_KEYS.AVAILABLE, 'true');
           localStorage.setItem(STORAGE_KEYS.VERSION, version);
           localStorage.setItem(STORAGE_KEYS.NOTES, notes);
         } else {
-          log("[UpdateCheck] No update found or up to date.");
           // Clear if no update (e.g. after an update was applied)
           localStorage.removeItem(STORAGE_KEYS.AVAILABLE);
           localStorage.removeItem(STORAGE_KEYS.VERSION);
           localStorage.removeItem(STORAGE_KEYS.NOTES);
         }
       } catch (error) {
-        log(`[UpdateCheck] Failed: ${error}`);
+        console.error('Failed to check for updates', error);
       }
     };
 

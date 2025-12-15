@@ -5,22 +5,13 @@
  */
 
 import packageJson from "../../../../package.json";
-import { invoke } from "@tauri-apps/api/core";
 
-const RELEASE_NOTES_URL = "https://raw.githubusercontent.com/a7mddra/imgi/main/CHANGELOG.md";
+const RELEASE_NOTES_URL = "https://raw.githubusercontent.com/a7mddra/spatialshot/main/CHANGELOG.md";
 
 export interface ReleaseInfo {
   version: string;
   notes: string;
   hasUpdate: boolean;
-}
-
-/**
- * Helper to log to both browser console and terminal
- */
-function log(message: string) {
-  console.log(message);
-  invoke("log_to_terminal", { message }).catch(() => {});
 }
 
 /**
@@ -47,27 +38,21 @@ export const fetchReleaseNotes = async (): Promise<ReleaseInfo> => {
       throw new Error(`Failed to fetch release notes: ${response.statusText}`);
     }
     const text = await response.text();
-    log("[ReleaseNotes] Fetched CHANGELOG.md successfully");
     
     // Regex to find "## X.Y.Z" headers
     const versionRegex = /^##\s+\[?(\d+\.\d+\.\d+)\]?/m;
     const match = text.match(versionRegex);
     
     if (!match) {
-      log("[ReleaseNotes] No version header found in CHANGELOG");
       return { version: packageJson.version, notes: "", hasUpdate: false };
     }
     
     const latestVersion = match[1];
-    log(`[ReleaseNotes] Latest version found: ${latestVersion}, Current version: ${packageJson.version}`);
     
     // Compare versions
     if (compareVersions(latestVersion, packageJson.version) <= 0) {
-      log(`[ReleaseNotes] You are on the latest release (${packageJson.version})`);
       return { version: latestVersion, notes: "", hasUpdate: false };
     }
-    
-    log(`[ReleaseNotes] Update available! ${packageJson.version} -> ${latestVersion}`);
     
     // Extract notes for the latest version
     // Find the start of the version section
@@ -95,7 +80,7 @@ export const fetchReleaseNotes = async (): Promise<ReleaseInfo> => {
     };
     
   } catch (error) {
-    log(`[ReleaseNotes] Error: ${error}`);
+    console.error("Error fetching release notes:", error);
     // Return no update on error to be safe
     return { version: packageJson.version, notes: "", hasUpdate: false };
   }
