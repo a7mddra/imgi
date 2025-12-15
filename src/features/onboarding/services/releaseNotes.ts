@@ -6,7 +6,8 @@
 
 import packageJson from "../../../../package.json";
 
-const RELEASE_NOTES_URL = "https://raw.githubusercontent.com/a7mddra/spatialshot/main/CHANGELOG.md";
+const RELEASE_NOTES_URL =
+  "https://raw.githubusercontent.com/a7mddra/spatialshot/main/CHANGELOG.md";
 
 export interface ReleaseInfo {
   version: string;
@@ -19,9 +20,9 @@ export interface ReleaseInfo {
  * Returns 1 if v1 > v2, -1 if v1 < v2, and 0 if v1 === v2.
  */
 function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
-  
+  const parts1 = v1.split(".").map(Number);
+  const parts2 = v2.split(".").map(Number);
+
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const p1 = parts1[i] || 0;
     const p2 = parts2[i] || 0;
@@ -38,50 +39,57 @@ export const fetchReleaseNotes = async (): Promise<ReleaseInfo> => {
       throw new Error(`Failed to fetch release notes: ${response.statusText}`);
     }
     const text = await response.text();
-    
-    // Regex to find "## X.Y.Z" headers
-    const versionRegex = /^##\s+\[?(\d+\.\d+\.\d+)\]?/m;
-    const match = text.match(versionRegex);
-    
-    if (!match) {
+
+    // REGEX EXPLANATION:
+    // ^##       -> Starts with "##" at the beginning of a line
+    // \s+       -> One or more spaces
+    // \[?       -> Optional opening bracket '['
+    // (\d...)   -> Capture Group 1: The SemVer version (X.Y.Z)
+    // \]?       -> Optional closing bracket ']'
+    // .*$       -> Match the rest of the line (e.g. comments/dates) so we can skip it
+    // flags: gm -> Global (find all), Multiline (^ matches start of lines)
+    const headerRegex = /^##\s+\[?(\d+\.\d+\.\d+)\]?.*$/gm;
+
+    // Get all version headers in the file
+    const matches = Array.from(text.matchAll(headerRegex));
+
+    if (matches.length === 0) {
       return { version: packageJson.version, notes: "", hasUpdate: false };
     }
-    
-    const latestVersion = match[1];
-    
-    // Compare versions
+
+    // 1. The first match is always the "Far Top" / Newest version
+    const latestMatch = matches[0];
+    const latestVersion = latestMatch[1];
+
+    // 2. Compare with current app version
     if (compareVersions(latestVersion, packageJson.version) <= 0) {
       return { version: latestVersion, notes: "", hasUpdate: false };
     }
-    
-    // Extract notes for the latest version
-    // Find the start of the version section
-    const startIdx = match.index! + match[0].length;
-    
-    // Find the next version header or end of file
-    const nextVersionRegex = /^##\s+\[?\d+\.\d+\.\d+\]?/m;
-    const remainingText = text.slice(startIdx);
-    const nextMatch = remainingText.match(nextVersionRegex);
-    
-    let versionSection = nextMatch 
-      ? remainingText.slice(0, nextMatch.index) 
-      : remainingText;
-      
-    // Filter for bullet points (lines starting with "- ")
-    const notes = versionSection
-      .split('\n')
-      .filter(line => line.trim().startsWith('-'))
-      .join('\n');
+
+    // 3. Extract the body
+    // Start reading immediately after the first header line ends
+    const startIdx = latestMatch.index! + latestMatch[0].length;
+
+    // Stop reading at the start of the NEXT header (if it exists), otherwise EOF
+    const endIdx = matches.length > 1 ? matches[1].index! : text.length;
+
+    const rawBody = text.slice(startIdx, endIdx);
+
+    // 4. Clean up: Filter for bullet points only
+    const notes = rawBody
+      .split("\n")
+      .map((line) => line.trim())
+      // Keep lines starting with - or * (standard markdown lists)
+      .filter((line) => line.startsWith("-") || line.startsWith("*"))
+      .join("\n");
 
     return {
       version: latestVersion,
       notes: notes.trim(),
-      hasUpdate: true
+      hasUpdate: true,
     };
-    
   } catch (error) {
     console.error("Error fetching release notes:", error);
-    // Return no update on error to be safe
     return { version: packageJson.version, notes: "", hasUpdate: false };
   }
 };

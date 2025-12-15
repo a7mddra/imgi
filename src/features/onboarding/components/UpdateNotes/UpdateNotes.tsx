@@ -101,15 +101,15 @@ export const UpdateNotes: React.FC<UpdateNotesProps> = ({ onClose, notes, versio
         />
       }
       onPrimaryAction={handleUpdate}
-      primaryLabel={updating ? status : "Update Now"}
+      primaryLabel={updating ? status : "Install Now"}
       disablePrimary={updating}
       onSecondaryAction={onClose}
       secondaryLabel="Maybe later"
       hideButtons={false}
     >
       <div className="flex flex-col h-full space-y-3" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <h3 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '0.5em 0' }}>
-          here are the new key features !:
+        <h3 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '0.5em 0', color: 'black' }}>
+          What's Changed
         </h3>
         <div className={styles.markdownScroll} style={{ marginTop: 0 }}>
            <ReactMarkdown
