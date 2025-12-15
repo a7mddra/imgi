@@ -5,7 +5,7 @@ import "katex/dist/katex.min.css";
 import "../ui/Notifications/Toast.css";
 import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
 import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
-import { Welcome } from "../../features/onboarding"; // Import Welcome
+import { Welcome } from "../../features/onboarding";
 import { Agreement } from "../../features/onboarding/components/Agreement/Agreement";
 import { UpdateNotes } from "../../features/onboarding/components/UpdateNotes/UpdateNotes";
 import { useSystemSync } from "../../hooks/useSystemSync";
@@ -21,7 +21,7 @@ export const AppLayout: React.FC = () => {
   // Run background update check for *next* session
   useUpdateCheck();
 
-  // 2. Chat Engine (only active if we have an image, essentially)
+  // 2. Chat Engine
   const chatEngine = useChatEngine({
     apiKey: system.apiKey,
     currentModel: system.sessionModel,
@@ -38,19 +38,15 @@ export const AppLayout: React.FC = () => {
   const [showUpdate, setShowUpdate] = useState(!!pendingUpdate);
   
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
-  const [hasAgreed, setHasAgreed] = useState(false);
 
   // --- Handlers ---
   
-  // Called by Welcome Screen when user picks a file
   const handleImageReady = (base64Full: string) => {
-    // Backend returns full data url: "data:image/png;base64,..."
-    // We split it for the system state
     const [header, base64Data] = base64Full.split(',');
     const mimeType = header.replace('data:', '').replace(';base64', '');
     
     system.setStartupImage({
-        base64: base64Full, // Keeping full string for img src
+        base64: base64Full, 
         mimeType: mimeType
     });
   };
@@ -92,7 +88,15 @@ export const AppLayout: React.FC = () => {
     );
   }
 
-  if (!hasAgreed) {
+  // 1. Loading State (Checking file)
+  if (system.hasAgreed === null) {
+      // Return null or a subtle loader to avoid flicker.
+      // Since it's fast file I/O, a black screen (matching app bg) is usually best.
+      return <div className="h-screen w-screen bg-neutral-950" />;
+  }
+
+  // 2. Agreement Screen
+  if (system.hasAgreed === false) {
     const getOSType = () => {
       const userAgent = window.navigator.userAgent.toLowerCase();
       if (userAgent.includes("win")) return "windows";
@@ -104,14 +108,14 @@ export const AppLayout: React.FC = () => {
       <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
         <Agreement 
           osType={getOSType()} 
-          onNext={() => setHasAgreed(true)} 
+          onNext={() => system.setHasAgreed(true)} 
           onCancel={() => exit(0)} 
         />
       </div>
     );
   }
 
-  // If no image is loaded yet, show the Welcome/Upload screen
+  // 3. Welcome / Image Upload
   if (!system.startupImage) {
     return (
         <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
@@ -120,7 +124,7 @@ export const AppLayout: React.FC = () => {
     );
   }
 
-  // Once image is loaded, show the Main Chat Interface
+  // 4. Main Chat Interface
   return (
     <div
       onContextMenu={handleContextMenu}

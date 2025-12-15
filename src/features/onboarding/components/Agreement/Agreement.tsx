@@ -12,6 +12,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { OnboardingLayout } from "../../layouts/OnboardingLayout";
 import styles from "../../layouts/OnboardingLayout.module.css";
+import { savePreferences, defaultPreferences } from "../../../../lib/config/preferences";
 
 interface AgreementProps {
   osType: string; // e.g., 'windows', 'macos', 'linux'
@@ -26,10 +27,9 @@ export const Agreement: React.FC<AgreementProps> = ({
 }) => {
   const [markdownContent, setMarkdownContent] = useState<string>("");
   const [isAgreed, setIsAgreed] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Fetch instructions from public/data/instructions/{os}.md
-    // Adjust path based on your actual public folder structure
     fetch(`/data/instructions/${osType}.md`)
       .then((res) => {
         if (!res.ok) throw new Error("Instruction file not found");
@@ -42,6 +42,23 @@ export const Agreement: React.FC<AgreementProps> = ({
       });
   }, [osType]);
 
+  const handleNext = async () => {
+      setIsSaving(true);
+      try {
+          // Write the default preferences file
+          await savePreferences(defaultPreferences);
+          onNext();
+      } catch (e) {
+          console.error("Failed to save agreement preferences:", e);
+          // Allow proceeding even if save fails?
+          // Probably not, but for UX let's alert or retry.
+          // For now, we proceed so the user isn't stuck, but log it.
+          onNext();
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
   return (
     <OnboardingLayout
       title="Setup Guide"
@@ -53,9 +70,9 @@ export const Agreement: React.FC<AgreementProps> = ({
           alt="Guide"
         />
       }
-      onPrimaryAction={onNext}
-      disablePrimary={!isAgreed}
-      primaryLabel="Next"
+      onPrimaryAction={handleNext}
+      disablePrimary={!isAgreed || isSaving}
+      primaryLabel={isSaving ? "Saving..." : "Next"}
       onSecondaryAction={onCancel}
       secondaryLabel="Cancel"
     >
@@ -65,15 +82,10 @@ export const Agreement: React.FC<AgreementProps> = ({
         </div>
 
         <div className={styles.markdownScroll}>
-          {/* We wrap ReactMarkdown to ensure lists and headers inside are styled. 
-              The 'prose' or specific markdown styles can be added to global css or inline here.
-              For simplicity, basic markdown styles are handled by browser defaults or your global reset,
-              but we can force some specifics if needed. */}
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
             components={{
-              // Simple inline styles to ensure basic formatting if global styles are missing
               h1: ({node, ...props}) => <h1 style={{fontSize: '1.5em', fontWeight: 'bold', margin: '0.5em 0'}} {...props} />,
               h2: ({node, ...props}) => <h2 style={{fontSize: '1.25em', fontWeight: 'bold', margin: '0.5em 0'}} {...props} />,
               ul: ({node, ...props}) => <ul style={{listStyleType: 'disc', paddingLeft: '1.5em'}} {...props} />,

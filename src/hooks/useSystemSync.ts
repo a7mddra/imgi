@@ -9,38 +9,53 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { showToast } from "../components/ui/Notifications/Toast";
 import { initializeGemini } from "../lib/api/gemini/client";
+import { useTheme } from "./useTheme";
+import { loadPreferences, savePreferences, hasPreferencesFile } from "../lib/config/preferences";
+import { DEFAULT_MODEL } from "../lib/utils/constants";
 
 export const useSystemSync = (onToggleSettings: () => void) => {
+  const { theme, toggleTheme } = useTheme();
+  
   const [apiKey, setApiKey] = useState<string>("");
   const [activePrompt, setActivePrompt] = useState<string>("");
   const [editingPrompt, setEditingPrompt] = useState<string>("");
-  const [startupModel, setStartupModel] = useState<string>("gemini-2.5-flash");
-  const [editingModel, setEditingModel] = useState<string>("gemini-2.5-flash");
-  const [sessionModel, setSessionModel] = useState<string>("gemini-2.5-flash");
+  const [startupModel, setStartupModel] = useState<string>(DEFAULT_MODEL);
+  const [editingModel, setEditingModel] = useState<string>(DEFAULT_MODEL);
+  const [sessionModel, setSessionModel] = useState<string>(DEFAULT_MODEL);
+  
+  // User Data (Still mocked or via Tauri for now if not in preferences)
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [avatarSrc, setAvatarSrc] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(
-    !document.body.classList.contains("light-mode")
-  );
+
   const [startupImage, setStartupImage] = useState<{
     base64: string;
     mimeType: string;
   } | null>(null);
+  
   const [systemError, setSystemError] = useState<string | null>(null);
   const clearSystemError = () => setSystemError(null);
 
-  useEffect(() => {
-    const unlistenPromise = listen<string>("theme-changed", (event) => {
-      const theme = event.payload;
-      const newIsDarkMode = theme === "dark";
-      setIsDarkMode(newIsDarkMode);
-      document.body.classList.toggle("light-mode", !newIsDarkMode);
-    });
+  // New: Agreement State
+  const [hasAgreed, setHasAgreed] = useState<boolean | null>(null); // null = loading
 
-    return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+  // Load Preferences & Agreement Status
+  useEffect(() => {
+    const init = async () => {
+        // Check Agreement
+        const agreed = await hasPreferencesFile();
+        setHasAgreed(agreed);
+
+        if (agreed) {
+            const prefs = await loadPreferences();
+            setActivePrompt(prefs.prompt);
+            setEditingPrompt(prefs.prompt);
+            setStartupModel(prefs.model);
+            setEditingModel(prefs.model);
+            setSessionModel(prefs.model);
+        }
     };
+    init();
   }, []);
 
   useEffect(() => {
@@ -52,19 +67,6 @@ export const useSystemSync = (onToggleSettings: () => void) => {
         if (key) {
           setApiKey(key);
           initializeGemini(key);
-        }
-
-        const savedPrompt = await invoke<string>("get_prompt");
-        if (savedPrompt) {
-          setActivePrompt(savedPrompt);
-          setEditingPrompt(savedPrompt);
-        }
-
-        const savedModel = await invoke<string>("get_model");
-        if (savedModel) {
-          setStartupModel(savedModel);
-          setEditingModel(savedModel);
-          setSessionModel(savedModel);
         }
 
         const userData = await invoke<any>("get_user_data");
@@ -98,7 +100,6 @@ export const useSystemSync = (onToggleSettings: () => void) => {
       }
 
       const unlistenImage = await listen<string>("image-path", (event) => {
-        console.log("Received new image path from Main:", event.payload);
         loadImageFromPath(event.payload);
       });
       unlisteners.push(unlistenImage);
@@ -121,22 +122,27 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     };
   }, [onToggleSettings]);
 
-  const saveSettings = (newPrompt: string, newModel: string) => {
+  const saveSettingsHandler = async (newPrompt: string, newModel: string) => {
     setStartupModel(newModel);
     setEditingModel(newModel);
     setActivePrompt(newPrompt);
     setEditingPrompt(newPrompt);
     
-    invoke("save_prompt", { prompt: newPrompt });
-    invoke("save_model", { model: newModel });
-    showToast("Settings saved", "done");
+    try {
+        await savePreferences({
+            prompt: newPrompt,
+            model: newModel,
+            theme: theme
+        });
+        showToast("Settings saved", "done");
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to save settings", "error");
+    }
   };
 
   const handleToggleTheme = () => {
-    const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-    document.body.classList.toggle("light-mode", !newIsDarkMode);
-    invoke("set_theme", { theme: newIsDarkMode ? "dark" : "light" });
+    toggleTheme();
   };
 
   const handleLogout = () => {
@@ -162,12 +168,14 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     userName,
     userEmail,
     avatarSrc,
-    isDarkMode,
+    isDarkMode: theme === "dark",
     systemError,
     clearSystemError,
-    saveSettings,
+    saveSettings: saveSettingsHandler,
     handleToggleTheme,
     handleLogout,
     handleResetAPIKey,
+    hasAgreed,
+    setHasAgreed
   };
 };

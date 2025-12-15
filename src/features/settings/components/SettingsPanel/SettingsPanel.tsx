@@ -15,6 +15,7 @@ import { invoke } from "@tauri-apps/api/core";
 import styles from "./SettingsPanel.module.css";
 import { GITHUB, MAILTO } from "../../types/settings.types";
 import { MODELS, ModelType } from "../../../../lib/config/models";
+import { DEFAULT_MODEL, DEFAULT_PROMPT } from "../../../../lib/utils/constants";
 import { Dialog } from "../../../../components/ui/Dialogs/Dialog";
 import { showToast } from "../../../../components/ui/Notifications/Toast";
 
@@ -159,11 +160,9 @@ export const SettingsPanel = forwardRef<
 
     const handleReset = async () => {
       setIsRotating(true);
-      const resetPrompt = await invoke<string>("reset_prompt");
-      const resetModelId = await invoke<string>("reset_model");
-      setLocalPrompt(resetPrompt);
-      setLocalModel(resetModelId);
-      setTimeout(() => setIsRotating(false), 1000);
+      setLocalPrompt(DEFAULT_PROMPT);
+      setLocalModel(DEFAULT_MODEL);
+      setTimeout(() => setIsRotating(false), 500);
     };
 
     const handleOpenSubview = () => {
