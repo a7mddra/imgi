@@ -1,11 +1,5 @@
-/**
- * @license
- * Copyright 2025 a7mddra
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core"; // Import invoke
 import styles from "./Button.module.css";
 
 interface LensButtonProps {
@@ -16,16 +10,17 @@ const LensButton: React.FC<LensButtonProps> = ({ isChatMode }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLensPress = async () => {
-    if (!isLoading) {
-      setIsLoading(true);
-      try {
-        await invoke("trigger_lens_search");
-      } catch (error) {
-        console.error("Error during Lens search:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (isLoading) return;
+    setIsLoading(true);
+    
+    try {
+        // Call the Rust boss
+        await invoke("open_imgbb_window");
+    } catch (e) {
+        console.error("Failed to open window", e);
     }
+    
+    setIsLoading(false);
   };
 
   return (

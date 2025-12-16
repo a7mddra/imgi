@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{WebviewWindowBuilder, WebviewUrl};
 
 // 1. Define AppState to hold the loaded image data
 struct AppState {
@@ -147,6 +148,29 @@ fn reset_api_key() {}
 
 #[tauri::command]
 fn trigger_lens_search() {}
+
+#[tauri::command]
+async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
+    // Check if it already exists to avoid duplicates
+    if let Some(window) = app.get_webview_window("imgbb-setup") {
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    let win = WebviewWindowBuilder::new(
+        &app,
+        "imgbb-setup",
+        WebviewUrl::App("/index.html?mode=imgbb".into())
+    )
+    .title("ImgBB Setup")
+    .inner_size(480.0, 430.0)
+    .resizable(false)
+    .always_on_top(true)
+    .build()
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

@@ -3,10 +3,12 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "main"
+    "main",
+    "imgbb-setup" 
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-create", 
     "process:default",
     "fs:default",
     "fs:allow-mkdir",

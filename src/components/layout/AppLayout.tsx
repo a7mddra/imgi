@@ -8,6 +8,9 @@ import { ChatLayout } from "../../features/chat/layouts/ChatLayout";
 import { Welcome } from "../../features/onboarding";
 import { Agreement } from "../../features/onboarding/components/Agreement/Agreement";
 import { UpdateNotes } from "../../features/onboarding/components/UpdateNotes/UpdateNotes";
+import { GeminiSetup } from "../../features/auth/components/BYOKey/GeminiSetup";
+import { LoginScreen } from "../../features/auth/components/LoginScreen/LoginScreen";
+import { useAuth } from "../../features/auth/hooks/useAuth"; 
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
@@ -20,7 +23,7 @@ export const AppLayout: React.FC = () => {
   const [isPanelActive, setIsPanelActive] = useState(false);
   const system = useSystemSync(() => setIsPanelActive(!isPanelActive));
 
-  // Run background update check for *next* session
+  const auth = useAuth(); 
   useUpdateCheck();
 
   // Listen for CLI image path on startup
@@ -159,11 +162,21 @@ export const AppLayout: React.FC = () => {
 
   // 3. Welcome / Image Upload
   if (!system.startupImage) {
-    return (
+     return (
         <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
-            <Welcome onImageReady={handleImageReady} />
+           <Welcome onImageReady={handleImageReady} />
         </div>
-    );
+     );
+  }
+
+  // 2. Gemini Setup (SECOND - Forced if not done)
+  if (auth.authStage === 'GEMINI_SETUP') {
+    return <GeminiSetup onComplete={auth.completeGeminiSetup} />;
+  }
+
+  // 3. Login Screen (THIRD)
+  if (auth.authStage === 'LOGIN') {
+    return <LoginScreen onComplete={auth.login} />;
   }
 
   // 4. Main Chat Interface

@@ -1,13 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-// MOCK AUTH for Development
+// STAGES: 0=Checking, 1=NeedsGemini, 2=NeedsLogin, 3=Authenticated
+type AuthStage = 'GEMINI_SETUP' | 'LOGIN' | 'AUTHENTICATED';
+
 export const useAuth = () => {
-  // Set this to true to see the App, false to see Onboarding
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  // Default to Gemini Setup first, as requested
+  const [authStage, setAuthStage] = useState<AuthStage>('GEMINI_SETUP');
 
-  const login = () => setIsAuthenticated(true);
-  const logout = () => setIsAuthenticated(false);
+  const completeGeminiSetup = () => {
+    setAuthStage('LOGIN');
+  };
 
-  return { isAuthenticated, isLoading, login, logout, user: { name: "Dev Architect", email: "deffffgtrgrgtrgtrgtgtgtgtgtrgtgtrv@spatialshot.app" } };
+  const login = () => {
+    setAuthStage('AUTHENTICATED');
+  };
+
+  return { 
+    authStage, 
+    isAuthenticated: authStage === 'AUTHENTICATED',
+    completeGeminiSetup,
+    login
+  };
 };
