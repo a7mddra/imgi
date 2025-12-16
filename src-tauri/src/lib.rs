@@ -1,27 +1,46 @@
 // FILE: src-tauri/src/lib.rs
 
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Key, Nonce,
+};
 use base64::{engine::general_purpose, Engine as _};
 use parking_lot::Mutex;
-use std::fs::File;
-use std::io::Read;
-use std::sync::Arc;
-use tauri::{AppHandle, Emitter, Manager, State};
-use tauri::{WebviewWindowBuilder, WebviewUrl};
+use pbkdf2::pbkdf2;
+use rand::{rngs::OsRng, RngCore};
+use sha2::{Digest, Sha256};
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+use std::thread;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
-// 1. Define AppState to hold the loaded image data
+// --- STATE MANAGEMENT ---
+
 struct AppState {
-    image_data: Arc<Mutex<Option<String>>>, // Stores "data:image/png;base64,..."
+    // Stores "data:image/png;base64,..." for the initial load
+    image_data: Arc<Mutex<Option<String>>>, 
+    // Kill switch for the background clipboard thread
+    watcher_running: Arc<AtomicBool>, 
 }
 
 impl AppState {
     fn new() -> Self {
         Self {
             image_data: Arc::new(Mutex::new(None)),
+            watcher_running: Arc::new(AtomicBool::new(false)),
         }
     }
 }
 
-// 2. Helper Functions (as requested)
+// --- HELPER FUNCTIONS ---
+
+// 1. Image Helpers
 fn process_and_store_image(path: &str, state: &State<AppState>) -> Result<String, String> {
     let mut file = File::open(path).map_err(|e| format!("Failed to open file: {}", e))?;
     let mut buffer = Vec::new();
@@ -51,8 +70,68 @@ fn process_bytes_internal(buffer: Vec<u8>, state: &State<AppState>) -> Result<St
     Ok(data_url)
 }
 
-// 3. Tauri Commands
+// 2. Crypto Helpers
+fn get_app_config_dir(app: &AppHandle) -> PathBuf {
+    app.path()
+        .app_config_dir()
+        .expect("Could not resolve app config dir")
+}
 
+// Replicates: crypto.createHash("sha256").update(homeDir).digest("hex")
+fn get_stable_passphrase() -> String {
+    let home_dir = dirs::home_dir().expect("Could not find home directory");
+    let home_str = home_dir.to_string_lossy();
+    let mut hasher = Sha256::new();
+    hasher.update(home_str.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+// Replicates: crypto.pbkdf2Sync(passphrase, salt, 150_000, 32, "sha256")
+fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; 32] {
+    let mut key = [0u8; 32];
+    pbkdf2::<hmac::Hmac<Sha256>>(passphrase.as_bytes(), salt, 150_000, &mut key);
+    key
+}
+
+// ADD THIS HELPER
+fn get_decrypted_key_internal(app: &AppHandle, provider: &str) -> Option<String> {
+    let config_dir = get_app_config_dir(app);
+    let file_path = config_dir.join(format!("{}_key.json", provider));
+
+    if !file_path.exists() {
+        return None;
+    }
+
+    // 1. Read JSON
+    let file_content = fs::read_to_string(file_path).ok()?;
+    let payload: serde_json::Value = serde_json::from_str(&file_content).ok()?;
+
+    // 2. Decode Base64 components
+    let salt = general_purpose::STANDARD.decode(payload["salt"].as_str()?).ok()?;
+    let iv = general_purpose::STANDARD.decode(payload["iv"].as_str()?).ok()?;
+    let tag = general_purpose::STANDARD.decode(payload["tag"].as_str()?).ok()?;
+    let ciphertext = general_purpose::STANDARD.decode(payload["ciphertext"].as_str()?).ok()?;
+
+    // 3. Re-Derive Key
+    let passphrase = get_stable_passphrase();
+    let key_bytes = derive_key(&passphrase, &salt);
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from_slice(&iv);
+
+    // 4. Combine Ciphertext + Tag (Rust AES-GCM expects them joined)
+    let mut encrypted_data = ciphertext;
+    encrypted_data.extend_from_slice(&tag);
+
+    // 5. Decrypt
+    let plaintext_bytes = cipher.decrypt(nonce, encrypted_data.as_ref()).ok()?;
+    
+    String::from_utf8(plaintext_bytes).ok()
+}
+
+// --- TAURI COMMANDS ---
+
+// 1. Image Commands
 #[tauri::command]
 fn get_initial_image(state: State<AppState>) -> Option<String> {
     let image_lock = state.image_data.lock();
@@ -77,37 +156,200 @@ fn read_image_file(path: String, state: State<AppState>) -> Result<serde_json::V
     let mime_type = parts[0].replace("data:", "").replace(";base64", "");
 
     Ok(serde_json::json!({
-        "base64": base64, // sending full data url as base64 field for simplicity in this stage
+        "base64": base64,
         "mimeType": mime_type
     }))
 }
 
-// Stub commands to prevent frontend crashes
+// 2. Auth & Watcher Commands
 
 #[tauri::command]
-fn get_api_key() -> String {
-    "".to_string()
+async fn start_clipboard_watcher(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    // 1. Stop any existing watcher
+    if state.watcher_running.load(Ordering::SeqCst) {
+        state.watcher_running.store(false, Ordering::SeqCst);
+        // Short wait to ensure previous thread exits
+        thread::sleep(Duration::from_millis(500));
+    }
+
+    // 2. Set flag to true
+    state.watcher_running.store(true, Ordering::SeqCst);
+    let running_flag = state.watcher_running.clone();
+    let app_handle = app.clone();
+
+    // 3. Spawn background thread
+    thread::spawn(move || {
+        let mut last_text = String::new();
+
+        while running_flag.load(Ordering::SeqCst) {
+            // FIX: Re-initialize the clipboard context EVERY LOOP.
+            // This forces a fresh connection to the OS clipboard server, 
+            // bypassing "stale handle" issues when the window loses focus.
+            match arboard::Clipboard::new() {
+                Ok(mut clipboard) => {
+                    if let Ok(text) = clipboard.get_text() {
+                        let trimmed = text.trim().to_string();
+
+                        if !trimmed.is_empty() && trimmed != last_text {
+                            last_text = trimmed.clone();
+
+                            // LOGIC: Check patterns
+                            if trimmed.starts_with("AIzaS") {
+                                println!("Gemini Key Detected: {}", trimmed);
+                                let _ = app_handle.emit("clipboard-text", serde_json::json!({
+                                    "provider": "gemini", 
+                                    "key": trimmed 
+                                }));
+                            } else if trimmed.len() == 32 && trimmed.chars().all(char::is_alphanumeric) {
+                                println!("ImgBB Key Detected: {}", trimmed);
+                                let _ = app_handle.emit("clipboard-text", serde_json::json!({
+                                    "provider": "imgbb", 
+                                    "key": trimmed 
+                                }));
+                            }
+                        }
+                    }
+                },
+                Err(e) => eprintln!("Clipboard init failed (retrying in 1s): {}", e),
+            }
+            
+            // Sleep for 1 second before next check
+            thread::sleep(Duration::from_millis(1000));
+        }
+    });
+
+    Ok(())
 }
 
 #[tauri::command]
-fn get_prompt() -> String {
-    "".to_string()
+async fn stop_clipboard_watcher(state: State<'_, AppState>) -> Result<(), String> {
+    state.watcher_running.store(false, Ordering::SeqCst);
+    Ok(())
 }
 
 #[tauri::command]
-fn get_model() -> String {
-    "gemini-2.5-flash".to_string()
+async fn encrypt_and_save(
+    app: AppHandle,
+    plaintext: String,
+    provider: String,
+) -> Result<String, String> {
+    // 1. Prepare Crypto Components
+    let passphrase = get_stable_passphrase();
+    let mut salt = [0u8; 16];
+    let mut iv = [0u8; 12];
+    OsRng.fill_bytes(&mut salt);
+    OsRng.fill_bytes(&mut iv);
+
+    // 2. Derive Key & Encrypt
+    let key_bytes = derive_key(&passphrase, &salt);
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from_slice(&iv);
+
+    let encrypted_data = cipher
+        .encrypt(nonce, plaintext.as_bytes())
+        .map_err(|e| format!("Encryption failed: {}", e))?;
+
+    // Split tag (last 16 bytes)
+    let (ciphertext, tag) = encrypted_data.split_at(encrypted_data.len() - 16);
+
+    // 3. Construct Payload
+    let payload = serde_json::json!({
+        "version": 1,
+        "algo": "aes-256-gcm",
+        "salt": general_purpose::STANDARD.encode(salt),
+        "iv": general_purpose::STANDARD.encode(iv),
+        "tag": general_purpose::STANDARD.encode(tag),
+        "ciphertext": general_purpose::STANDARD.encode(ciphertext)
+    });
+
+    // 4. Save to File
+    let config_dir = get_app_config_dir(&app);
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    }
+
+    let file_path = config_dir.join(format!("{}_key.json", provider));
+    let mut file = File::create(&file_path).map_err(|e| e.to_string())?;
+
+    file.write_all(serde_json::to_string_pretty(&payload).unwrap().as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    // 5. Close ImgBB Window if that was the provider
+    if provider == "imgbb" {
+        if let Some(win) = app.get_webview_window("imgbb-setup") {
+            let _ = win.close();
+        }
+    }
+
+    Ok(file_path.to_string_lossy().to_string())
 }
+
+#[tauri::command]
+fn check_file_exists(app: AppHandle, filename: String) -> bool {
+    let path = get_app_config_dir(&app).join(filename);
+    path.exists()
+}
+
+// 3. Window & Utility Commands
+
+#[tauri::command]
+async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("imgbb-setup") {
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    WebviewWindowBuilder::new(
+        &app,
+        "imgbb-setup",
+        WebviewUrl::App("index.html?mode=imgbb".into()),
+    )
+    .title("ImgBB Setup")
+    .inner_size(480.0, 430.0)
+    .resizable(false)
+    .minimizable(false)
+    .maximizable(false)
+    .always_on_top(true)
+    .center()
+    .build()
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn open_external_url(url: String) {
+    let _ = opener::open(url);
+}
+
+#[tauri::command]
+fn clear_cache(app: AppHandle) {
+    app.webview_windows().iter().for_each(|(_, window)| {
+        let _ = window.clear_all_browsing_data();
+    });
+}
+
+// 4. Stubs (Mocking existing API calls to prevent crashes)
+
+#[tauri::command]
+fn get_key(app: AppHandle, provider: String) -> String {
+    get_decrypted_key_internal(&app, &provider).unwrap_or_default()
+}
+
+#[tauri::command]
+fn get_prompt() -> String { "".to_string() }
+
+#[tauri::command]
+fn get_model() -> String { "gemini-2.5-flash".to_string() }
 
 #[tauri::command]
 fn get_user_data() -> serde_json::Value {
-    serde_json::json!({ "name": "Dev User", "email": "dev@lochhhhhhhhhuhuuhuhuhuhal", "avatar": "" })
+    serde_json::json!({ "name": "Dev User", "email": "dev@spatialshot.app", "avatar": "" })
 }
 
 #[tauri::command]
-fn get_session_path() -> Option<String> {
-    None
-}
+fn get_session_path() -> Option<String> { None }
 
 #[tauri::command]
 fn save_prompt(_prompt: String) {}
@@ -119,26 +361,10 @@ fn save_model(_model: String) {}
 fn set_theme(_theme: String) {}
 
 #[tauri::command]
-fn clear_cache(app: AppHandle) {
-    app.webview_windows().iter().for_each(|(_, window)| {
-        let _ = window.clear_all_browsing_data();
-    });
-}
+fn reset_prompt() -> String { "".to_string() }
 
 #[tauri::command]
-fn open_external_url(url: String) {
-    let _ = opener::open(url);
-}
-
-#[tauri::command]
-fn reset_prompt() -> String {
-    "".to_string()
-}
-
-#[tauri::command]
-fn reset_model() -> String {
-    "gemini-2.5-flash".to_string()
-}
+fn reset_model() -> String { "gemini-2.5-flash".to_string() }
 
 #[tauri::command]
 fn logout() {}
@@ -149,33 +375,7 @@ fn reset_api_key() {}
 #[tauri::command]
 fn trigger_lens_search() {}
 
-#[tauri::command]
-async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
-    // 1. Check if window exists to focus it instead of opening duplicate
-    if let Some(window) = app.get_webview_window("imgbb-setup") {
-        let _ = window.set_focus();
-        return Ok(());
-    }
-
-    // 2. Create the window matching Electron's "dims" and "preferences"
-    // Electron: width: 480, height: 430, resizable: false, minimizable: false...
-    let win = WebviewWindowBuilder::new(
-        &app,
-        "imgbb-setup", // The label
-        WebviewUrl::App("index.html?mode=imgbb".into()) // The URL with query param
-    )
-    .title("ImgBB Setup")
-    .inner_size(480.0, 430.0)
-    .resizable(false)
-    .minimizable(false) // Match Electron
-    .maximizable(false) // Match Electron
-    .always_on_top(true)
-    .center() // Helper to center it like Electron's getDynamicDims often does
-    .build()
-    .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
+// --- ENTRY POINT ---
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -184,11 +384,23 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(AppState::new()) // Initialize State
+        .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
+            // Image
             process_image_path,
             process_image_bytes,
             read_image_file,
+            get_initial_image,
+            // Auth / Watcher
+            start_clipboard_watcher,
+            stop_clipboard_watcher,
+            encrypt_and_save,
+            check_file_exists,
+            // Window / Utils
+            open_imgbb_window,
+            open_external_url,
+            clear_cache,
+            // Stubs
             get_api_key,
             get_prompt,
             get_model,
@@ -197,35 +409,23 @@ pub fn run() {
             save_prompt,
             save_model,
             set_theme,
-            clear_cache,
-            open_external_url,
             reset_prompt,
             reset_model,
             logout,
             reset_api_key,
-            trigger_lens_search,
-            get_initial_image,
-            open_imgbb_window
+            trigger_lens_search
         ])
         .setup(|app| {
             let handle = app.handle().clone();
-            
+
             // CLI Argument Handling
-            // This logic is already good for production. 
-            // It ignores flags (starts with -) and grabs the first file path.
             let args: Vec<String> = std::env::args().collect();
-            
-            // Skip binary name (0), find first arg that isn't a flag
             if let Some(path) = args.iter().skip(1).find(|arg| !arg.starts_with("-")) {
-                 println!("CLI Image argument detected: {}", path);
-                 let state = handle.state::<AppState>();
-                 
-                 // This stores the Base64 in the AppState Mutex
-                 if let Ok(_data_url) = process_and_store_image(path, &state) {
-                    // We keep the emit for hot-reloading or late events, 
-                    // but the frontend will rely on 'get_initial_image' for startup.
+                println!("CLI Image argument detected: {}", path);
+                let state = handle.state::<AppState>();
+                if let Ok(_data_url) = process_and_store_image(path, &state) {
                     let _ = handle.emit("image-path", path);
-                 }
+                }
             }
 
             Ok(())

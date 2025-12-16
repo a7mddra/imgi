@@ -1,37 +1,32 @@
-import React, { useState } from "react";
-import { invoke } from "@tauri-apps/api/core"; // Import invoke
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from "react";
 import styles from "./Button.module.css";
+import { useLens } from "../../hooks/useLens";
 
 interface LensButtonProps {
   isChatMode: boolean;
+  startupImage: { base64: string } | null;
 }
 
-const LensButton: React.FC<LensButtonProps> = ({ isChatMode }) => {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleLensPress = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    
-    try {
-        // Call the Rust boss
-        await invoke("open_imgbb_window");
-    } catch (e) {
-        console.error("Failed to open window", e);
-    }
-    
-    setIsLoading(false);
-  };
+const LensButton: React.FC<LensButtonProps> = ({ isChatMode, startupImage }) => {
+  // The hook handles the logic: 
+  // 1. Check Key -> 2. Open Window OR Upload -> 3. Open Browser
+  const { isLensLoading, triggerLens } = useLens(startupImage);
 
   return (
     <button
       className={`${styles.lensBtn} ${isChatMode ? styles.chatMode : ""}`}
-      onClick={handleLensPress}
-      disabled={isLoading}
+      onClick={triggerLens}
+      disabled={isLensLoading}
     >
       <span className={styles.btnBorder}></span>
 
-      {isLoading ? (
+      {isLensLoading ? (
         <svg viewBox="0 0 24 24" fill="none" className={styles.spinner}>
           <circle
             cx="12"
