@@ -151,21 +151,26 @@ fn trigger_lens_search() {}
 
 #[tauri::command]
 async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
-    // Check if it already exists to avoid duplicates
+    // 1. Check if window exists to focus it instead of opening duplicate
     if let Some(window) = app.get_webview_window("imgbb-setup") {
         let _ = window.set_focus();
         return Ok(());
     }
 
+    // 2. Create the window matching Electron's "dims" and "preferences"
+    // Electron: width: 480, height: 430, resizable: false, minimizable: false...
     let win = WebviewWindowBuilder::new(
         &app,
-        "imgbb-setup",
-        WebviewUrl::App("/index.html?mode=imgbb".into())
+        "imgbb-setup", // The label
+        WebviewUrl::App("index.html?mode=imgbb".into()) // The URL with query param
     )
     .title("ImgBB Setup")
     .inner_size(480.0, 430.0)
     .resizable(false)
+    .minimizable(false) // Match Electron
+    .maximizable(false) // Match Electron
     .always_on_top(true)
+    .center() // Helper to center it like Electron's getDynamicDims often does
     .build()
     .map_err(|e| e.to_string())?;
 
@@ -199,7 +204,8 @@ pub fn run() {
             logout,
             reset_api_key,
             trigger_lens_search,
-            get_initial_image // <--- REGISTER THE NEW COMMAND HERE
+            get_initial_image,
+            open_imgbb_window
         ])
         .setup(|app| {
             let handle = app.handle().clone();

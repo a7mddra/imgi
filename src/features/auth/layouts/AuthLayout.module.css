@@ -51,7 +51,11 @@
 }
 
 .containerImgbb {
-  padding-bottom: 30px; /* Specific bottom position for ImgBB */
+  padding-bottom: 110px; /* Specific bottom position for ImgBB */
+}
+
+.containerImgbb {
+  padding-left: 70px; /* Specific bottom position for ImgBB */
 }
 
 /* ... Keep the rest (Typography, Buttons, Spinner) exactly as before ... */

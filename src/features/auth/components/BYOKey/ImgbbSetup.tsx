@@ -10,10 +10,8 @@ export const ImgbbSetup: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    // In a real app, you'd trigger the clipboard watcher here
-    // For now, simulating success after 3s
+    // Simulate waiting for clipboard/API
     setTimeout(async () => {
-      // Close this specific window after "success"
       await getCurrentWindow().close();
     }, 3000);
   };
@@ -41,7 +39,9 @@ export const ImgbbSetup: React.FC = () => {
             </svg>
            )}
 
-          {!isLoading && <span>Sign up and get API key</span>}
+          {/* FIX: Removed {!isLoading && ...} check so text stays visible */}
+          <span>Sign up and get API key</span>
+          
           <div className={styles.btnBorder}></div>
         </button>
       </div>
