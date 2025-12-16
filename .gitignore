@@ -16,5 +16,5 @@ dist
 dist-ssr
 *.local
 
-src-tauri/auth/credentials.json
+src-tauri/src/auth/credentials.json
 src-tauri/*.key
