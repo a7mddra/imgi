@@ -122,7 +122,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
           <line x1="12" y1="6" x2="12" y2="18"></line>
         </svg>
         <div className={styles.title}>Upload your image</div>
-        <div className={styles.subtitle}>Click, drop, or paste (Ctrl+V) a file</div>
+        <div className={styles.subtitle}>Click, drop, or paste a file</div>
         <div className={styles.hint} aria-hidden="true">
           <span>• JPG, PNG, WEBP</span>
           <span>• Max 20 MB</span>
