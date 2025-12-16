@@ -11,14 +11,14 @@ import { showToast } from "../components/ui/Notifications/Toast";
 import { initializeGemini } from "../lib/api/gemini/client";
 import { useTheme } from "./useTheme";
 import { loadPreferences, savePreferences, hasPreferencesFile } from "../lib/config/preferences";
-import { DEFAULT_MODEL } from "../lib/utils/constants";
+import { DEFAULT_MODEL, DEFAULT_PROMPT, DEFAULT_THEME } from "../lib/utils/constants";
 
 export const useSystemSync = (onToggleSettings: () => void) => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, setTheme } = useTheme();
   
   const [apiKey, setApiKey] = useState<string>("");
-  const [activePrompt, setActivePrompt] = useState<string>("");
-  const [editingPrompt, setEditingPrompt] = useState<string>("");
+  const [activePrompt, setActivePrompt] = useState<string>(DEFAULT_PROMPT);
+  const [editingPrompt, setEditingPrompt] = useState<string>(DEFAULT_PROMPT);
   const [startupModel, setStartupModel] = useState<string>(DEFAULT_MODEL);
   const [editingModel, setEditingModel] = useState<string>(DEFAULT_MODEL);
   const [sessionModel, setSessionModel] = useState<string>(DEFAULT_MODEL);
@@ -48,11 +48,22 @@ export const useSystemSync = (onToggleSettings: () => void) => {
 
         if (agreed) {
             const prefs = await loadPreferences();
-            setActivePrompt(prefs.prompt);
-            setEditingPrompt(prefs.prompt);
-            setStartupModel(prefs.model);
-            setEditingModel(prefs.model);
-            setSessionModel(prefs.model);
+            
+            const loadedPrompt = prefs.prompt || DEFAULT_PROMPT;
+            setActivePrompt(loadedPrompt);
+            setEditingPrompt(loadedPrompt);
+            
+            const loadedModel = prefs.model || DEFAULT_MODEL;
+            setStartupModel(loadedModel);
+            setEditingModel(loadedModel);
+            setSessionModel(loadedModel);
+
+            if (prefs.theme) {
+                setTheme(prefs.theme);
+            }
+        } else {
+             // Fallback to defaults if no preferences file
+             setTheme(DEFAULT_THEME as "light" | "dark");
         }
     };
     init();
@@ -137,7 +148,8 @@ export const useSystemSync = (onToggleSettings: () => void) => {
         showToast("Settings saved", "done");
     } catch (e) {
         console.error(e);
-        showToast("Failed to save settings", "error");
+        const msg = e instanceof Error ? e.message : String(e);
+        showToast(`Failed to save settings: ${msg}`, "error");
     }
   };
 

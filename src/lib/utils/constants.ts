@@ -4,5 +4,5 @@ export const DEFAULT_MODEL = "gemini-2.5-flash";
 export const DEFAULT_THEME = "dark";
 
 export const DEFAULT_PROMPT =
-  "Analyze this image and explain it or discuss fixes about the issue it describes.";
+  "analyze this image and explain it or discuss fixes about the issue it discribes.";
 export const PREFERENCES_FILE_NAME = "preferences.json";

@@ -61,6 +61,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
+  // 4. Force sync DOM on mount (fixes startup color bug)
+  // Ensure the DOM classList matches the React state, even if they appear synchronized.
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+    document.body.classList.toggle("light-mode", theme === "light");
+  }, [theme]);
+
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}

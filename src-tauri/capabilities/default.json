@@ -9,9 +9,15 @@
     "core:default",
     "process:default",
     "fs:default",
+    "fs:allow-mkdir",
+    "fs:allow-write-text-file",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "opener:default",
+    "updater:default",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPCONFIG/**" }]
+      "allow": ["$APPCONFIG", "$APPCONFIG/**"]
     }
   ]
 }

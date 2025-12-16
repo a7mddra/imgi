@@ -63,7 +63,8 @@ export async function loadPreferences(): Promise<UserPreferences> {
 
 export async function savePreferences(prefs: UserPreferences): Promise<void> {
   try {
-    // 1. Ensure the directory exists (Recursive creates the full path if missing)
+    // 1. Ensure the directory exists
+    // passing "" with baseDir: AppConfig refers to the config root folder itself.
     await mkdir("", { baseDir: BaseDirectory.AppConfig, recursive: true });
 
     // 2. Write the file
