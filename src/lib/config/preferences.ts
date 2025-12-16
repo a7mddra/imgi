@@ -72,6 +72,9 @@ export async function savePreferences(prefs: UserPreferences): Promise<void> {
     });
   } catch (error) {
     console.error("Failed to save preferences:", error);
+    if (typeof error === 'object' && error !== null) {
+        console.error("Error details:", JSON.stringify(error));
+    }
     throw error;
   }
 }

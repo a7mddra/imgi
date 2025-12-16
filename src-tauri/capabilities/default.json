@@ -8,6 +8,10 @@
   "permissions": [
     "core:default",
     "process:default",
-    "fs:default"
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPCONFIG/**" }]
+    }
   ]
 }
