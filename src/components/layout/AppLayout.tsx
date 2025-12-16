@@ -12,6 +12,8 @@ import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
 import { exit } from "@tauri-apps/plugin-process";
+import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 export const AppLayout: React.FC = () => {
   // 1. Hook into System State
@@ -20,6 +22,26 @@ export const AppLayout: React.FC = () => {
 
   // Run background update check for *next* session
   useUpdateCheck();
+
+  // Listen for CLI image path on startup
+  useEffect(() => {
+    const unlisten = listen<string>('image-path', async (event) => {
+      const imagePath = event.payload;
+      if (imagePath) {
+        try {
+          console.log("Processing CLI image:", imagePath)
+          const base64 = await invoke<string>('process_image_path', { path: imagePath });
+          handleImageReady(base64);
+        } catch (error) {
+          console.error("Failed to process CLI image:", error);
+        }
+      }
+    });
+  
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
 
   // 2. Chat Engine
   const chatEngine = useChatEngine({

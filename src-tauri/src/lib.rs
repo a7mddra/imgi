@@ -1,6 +1,6 @@
 // FILE: src-tauri/src/lib.rs
 
-use tauri_plugin_cli::CliExt;
+
 use tauri::{AppHandle, Emitter, Manager, State};
 use std::fs::File;
 use std::io::Read;
