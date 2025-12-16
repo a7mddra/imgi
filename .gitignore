@@ -16,7 +16,5 @@ dist
 dist-ssr
 *.local
 
-src-electron/node_modules
-src-electron/dist
-
-src-electron/auth/credentials.json
+src-tauri/auth/credentials.json
+src-tauri/*.key
