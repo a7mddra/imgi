@@ -4,7 +4,7 @@
  * SPDX-license-identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { showToast } from "../components/ui/Notifications/Toast";
@@ -15,7 +15,14 @@ import { DEFAULT_MODEL, DEFAULT_PROMPT, DEFAULT_THEME } from "../lib/utils/const
 
 export const useSystemSync = (onToggleSettings: () => void) => {
   const { theme, toggleTheme, setTheme } = useTheme();
+
+  const onToggleSettingsRef = useRef(onToggleSettings);
   
+  // Update ref whenever the passed function changes
+  useEffect(() => {
+    onToggleSettingsRef.current = onToggleSettings;
+  }, [onToggleSettings]);
+
   const [apiKey, setApiKey] = useState<string>("");
   const [activePrompt, setActivePrompt] = useState<string>(DEFAULT_PROMPT);
   const [editingPrompt, setEditingPrompt] = useState<string>(DEFAULT_PROMPT);

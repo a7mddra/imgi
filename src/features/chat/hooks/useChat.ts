@@ -15,12 +15,14 @@ export const useChatEngine = ({
   startupImage,
   prompt,
   setCurrentModel,
+  enabled,  
 }: {
   apiKey: string;
   currentModel: string;
   startupImage: { base64: string; mimeType: string } | null;
   prompt: string;
   setCurrentModel: (model: string) => void;
+  enabled: boolean;
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,10 +35,11 @@ export const useChatEngine = ({
   const clearError = () => setError(null);
 
   useEffect(() => {
-    if (startupImage && prompt) {
+    // FIX: Only start if enabled is true
+    if (enabled && startupImage && prompt) {
       startSession(apiKey || "", currentModel, startupImage);
     }
-  }, [apiKey, prompt, startupImage, currentModel]);
+  }, [apiKey, prompt, startupImage, currentModel, enabled]);
 
   const resetInitialUi = () => {
     setStreamingText("");

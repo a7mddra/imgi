@@ -1,6 +1,6 @@
 // FILE: src/components/layout/AppLayout.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "katex/dist/katex.min.css";
 import "../ui/Notifications/Toast.css";
 import { ContextMenu } from "../ui/ContextMenu/ContextMenu";
@@ -19,10 +19,15 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 
 export const AppLayout: React.FC = () => {
-  // 1. Hook into System State
   const [isPanelActive, setIsPanelActive] = useState(false);
-  const system = useSystemSync(() => setIsPanelActive(!isPanelActive));
 
+  // FIX: Memoize the toggle function to prevent infinite loop in useSystemSync
+  const handleToggleSettings = useCallback(() => {
+    setIsPanelActive((prev) => !prev);
+  }, []);
+
+  // Pass the memoized function
+  const system = useSystemSync(handleToggleSettings);
   const auth = useAuth(); 
   useUpdateCheck();
 
@@ -63,6 +68,14 @@ export const AppLayout: React.FC = () => {
     };
   }, []);
 
+  const isAgreementPending = system.hasAgreed === false;
+  const isLoadingState = system.hasAgreed === null || auth.authStage === 'LOADING';
+  const isImageMissing = !system.startupImage;
+  const isAuthPending = auth.authStage === 'GEMINI_SETUP' || auth.authStage === 'LOGIN';
+
+  // 2. Determine if Chat should be active
+  const isChatActive = !isLoadingState && !isAgreementPending && !isImageMissing && !isAuthPending;
+
   // 2. Chat Engine
   const chatEngine = useChatEngine({
     apiKey: system.apiKey,
@@ -70,7 +83,9 @@ export const AppLayout: React.FC = () => {
     startupImage: system.startupImage,
     prompt: system.prompt,
     setCurrentModel: system.setSessionModel,
+    enabled: isChatActive, // <--- ONLY RUN WHEN UI IS READY
   });
+
 
   // 3. Local Layout State
   const [input, setInput] = useState("");

@@ -2,20 +2,20 @@ import React, { useState } from "react";
 import styles from "../../layouts/AuthLayout.module.css";
 // We need to close this window when done
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from "@tauri-apps/api/core";
 
 export const ImgbbSetup: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleClick = async () => {
+const handleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    // Simulate waiting for clipboard/API
-    setTimeout(async () => {
-      await getCurrentWindow().close();
-    }, 3000);
+    // OPEN BROWSER HERE (User Request)
+    await invoke("open_external_url", { url: "https://api.imgbb.com/" });
+    
+    // Window closing is handled by Rust watcher events
   };
-
   return (
     <div className={styles.viewContainer}>
       <div className={`${styles.container} ${styles.containerImgbb}`}>

@@ -6,7 +6,6 @@ import { showToast } from "../../../components/ui/Notifications/Toast";
 
 export const useLens = (startupImage: { base64: string } | null) => {
   const [isLensLoading, setIsLensLoading] = useState(false);
-  // Track if we are currently waiting for the user to copy the key
   const [waitingForKey, setWaitingForKey] = useState(false);
   
   // Keep a ref to the image so the event listener always has the latest version
@@ -58,42 +57,44 @@ export const useLens = (startupImage: { base64: string } | null) => {
 
   const triggerLens = async () => {
     if (!startupImage) return;
-    if (isLensLoading) return;
+    // Don't trigger if already loading OR waiting for key
+    if (isLensLoading || waitingForKey) return;
 
     try {
       setIsLensLoading(true);
 
-      // 1. Try to get existing key
       const apiKey = await invoke<string>("get_key", { provider: "imgbb" });
 
       if (apiKey) {
-        // Path A: Key exists -> Run immediately
         await runLensSearch(startupImage.base64, apiKey);
       } else {
         // Path B: Key missing -> Start Setup Flow
         
-        // 1. Open the website (User Req #1)
-        invoke("open_external_url", { url: "https://api.imgbb.com/" });
+        // REMOVED: invoke("open_external_url", ...) - User request: don't open browser here.
         
-        // 2. Start the watcher so we can catch the copy
+        // 1. Start Watcher
         await invoke("start_clipboard_watcher"); 
         
-        // 3. Open the instruction window
+        // 2. Open Setup Window
         await invoke("open_imgbb_window");
         
-        // 4. Enter "Waiting" state to auto-trigger when ready (User Req #2)
+        // 3. Enter Waiting State
         setWaitingForKey(true);
         
-        setIsLensLoading(false); // Stop loading spinner so they can see UI
+        // IMPORTANT: We do NOT set isLensLoading to false here.
+        // We want the button to keep spinning/disabled until the flow finishes.
+        // The spinning logic in the button relies on `isLensLoading`.
       }
     } catch (error) {
       console.error("Lens Trigger Error:", error);
       setIsLensLoading(false);
+      setWaitingForKey(false);
     }
   };
 
   return {
-    isLensLoading: isLensLoading || waitingForKey, // Keep spinner or disabled state while setting up
+    // Spinner is active if we are processing OR waiting for user input
+    isLensLoading: isLensLoading || waitingForKey, 
     triggerLens,
   };
 };
