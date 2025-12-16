@@ -126,7 +126,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_cli::init())
+        // .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState::new()) // Initialize State
         .invoke_handler(tauri::generate_handler![
@@ -153,24 +153,20 @@ pub fn run() {
             // CLI Argument Handling
             let handle = app.handle().clone();
             
-            // We run this in a thread or match immediately. 
-            // Note: app.cli() might block slightly, but safe here.
-            match app.cli().matches() {
-                Ok(matches) => {
-                    if let Some(arg) = matches.args.get("image") {
-                        if let serde_json::Value::String(path) = &arg.value {
-                             println!("CLI Image argument received: {}", path);
-                             let state = handle.state::<AppState>();
-                             // Process immediately
-                             if let Ok(_data_url) = process_and_store_image(path, &state) {
-                                // Emit event to frontend so it picks it up on mount
-                                let _ = handle.emit("image-path", path);
-                             }
-                        }
-                    }
-                }
-                Err(e) => println!("CLI Error: {}", e),
+            // Manual argument parsing to be more robust against unexpected flags
+            // (e.g. --no-default-features injected by cargo/tauri dev environment)
+            let args: Vec<String> = std::env::args().collect();
+            // Look for the first argument that is not the binary itself and not a flag
+            if let Some(path) = args.iter().skip(1).find(|arg| !arg.starts_with("-")) {
+                 println!("CLI Image argument detected: {}", path);
+                 let state = handle.state::<AppState>();
+                 // Process immediately
+                 if let Ok(_data_url) = process_and_store_image(path, &state) {
+                    // Emit event to frontend so it picks it up on mount
+                    let _ = handle.emit("image-path", path);
+                 }
             }
+
             Ok(())
         })
         .run(tauri::generate_context!())
