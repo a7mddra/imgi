@@ -13,6 +13,7 @@ const handleClick = async () => {
 
     // OPEN BROWSER HERE (User Request)
     await invoke("open_external_url", { url: "https://api.imgbb.com/" });
+    await invoke("start_clipboard_watcher");
     
     // Window closing is handled by Rust watcher events
   };

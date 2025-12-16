@@ -37,13 +37,16 @@ export const useAuth = () => {
     const unlisten = listen<{ provider: string; key: string }>('clipboard-text', async (event) => {
       const { provider, key } = event.payload;
 
-      // 1. Stop Watcher
+      // 1. OPTIMISTIC UPDATE: If ImgBB, close the window via command immediately
+      // We don't wait for encryption. We just kill the window.
+      if (provider === 'imgbb') {
+          invoke('close_imgbb_window'); // We need to add this small command
+      }
+
       await invoke('stop_clipboard_watcher');
       setIsWatcherActive(false);
-
-      // 2. Encrypt & Save
       await invoke('encrypt_and_save', { plaintext: key, provider });
-
+      
       // 3. Handle State Transitions
       if (provider === 'gemini') {
         const hasProfile = await invoke('check_file_exists', { filename: 'profile.json' });

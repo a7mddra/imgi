@@ -1,5 +1,5 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit, Payload},
+    aead::{Aead, KeyInit},
     Aes256Gcm, Key, Nonce,
 };
 use base64::{engine::general_purpose, Engine as _};
@@ -93,7 +93,8 @@ fn get_stable_passphrase() -> String {
 // Replicates: crypto.pbkdf2Sync(passphrase, salt, 150_000, 32, "sha256")
 fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; 32] {
     let mut key = [0u8; 32];
-    pbkdf2::<hmac::Hmac<Sha256>>(passphrase.as_bytes(), salt, 150_000, &mut key);
+    pbkdf2::<hmac::Hmac<Sha256>>(passphrase.as_bytes(), salt, 150_000, &mut key)
+        .expect("PBKDF2 key derivation failed");
     key
 }
 
@@ -183,6 +184,7 @@ async fn start_clipboard_watcher(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    // Kill existing watcher
     if state.watcher_running.load(Ordering::SeqCst) {
         state.watcher_running.store(false, Ordering::SeqCst);
         thread::sleep(Duration::from_millis(500));
@@ -193,49 +195,46 @@ async fn start_clipboard_watcher(
     let app_handle = app.clone();
 
     thread::spawn(move || {
-        let mut last_text = String::new();
-        
-        // FIX 1: Initialize Clipboard OUTSIDE the loop
-        // If it fails to init (e.g. on a weird headless setup), we exit the thread to prevent log spam/lag.
-        let mut clipboard = match arboard::Clipboard::new() {
-            Ok(cb) => cb,
-            Err(e) => {
-                eprintln!("Failed to init clipboard: {}", e);
-                return; 
+        // FIX 1: Retry logic for Clipboard initialization
+        let mut clipboard = loop {
+            match arboard::Clipboard::new() {
+                Ok(cb) => break cb,
+                Err(e) => {
+                    eprintln!("Clipboard init failed, retrying in 1s: {}", e);
+                    if !running_flag.load(Ordering::SeqCst) { return; }
+                    thread::sleep(Duration::from_secs(1));
+                }
             }
         };
 
+        // FIX 2: Pre-fill last_text with CURRENT content to ignore stale keys
+        let mut last_text = clipboard.get_text().unwrap_or_default().trim().to_string();
+        println!("Watcher started. Ignoring current clipboard content.");
+
         while running_flag.load(Ordering::SeqCst) {
-            // FIX 2: Use the existing instance
             if let Ok(text) = clipboard.get_text() {
                 let trimmed = text.trim().to_string();
 
                 if !trimmed.is_empty() && trimmed != last_text {
                     last_text = trimmed.clone();
 
+                    // Pattern Matching
                     if trimmed.starts_with("AIzaS") {
                         println!("Gemini Key Detected");
                         let _ = app_handle.emit(
                             "clipboard-text",
-                            serde_json::json!({
-                                "provider": "gemini", 
-                                "key": trimmed 
-                            }),
+                            serde_json::json!({ "provider": "gemini", "key": trimmed }),
                         );
                     } else if trimmed.len() == 32 && trimmed.chars().all(char::is_alphanumeric) {
-                         println!("ImgBB Key Detected");
-                         let _ = app_handle.emit(
+                        println!("ImgBB Key Detected");
+                        let _ = app_handle.emit(
                             "clipboard-text",
-                            serde_json::json!({
-                                "provider": "imgbb", 
-                                "key": trimmed 
-                            }),
+                            serde_json::json!({ "provider": "imgbb", "key": trimmed }),
                         );
                     }
                 }
             }
-            // FIX 3: Sleep longer (1s is fine, but moving 'new' out is the real fix)
-            thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(500)); // 500ms is responsive enough
         }
     });
 
@@ -254,59 +253,65 @@ async fn encrypt_and_save(
     plaintext: String,
     provider: String,
 ) -> Result<String, String> {
-    // 1. Prepare Crypto Components
-    let passphrase = get_stable_passphrase();
-    let mut salt = [0u8; 16];
-    let mut iv = [0u8; 12];
-    OsRng.fill_bytes(&mut salt);
-    OsRng.fill_bytes(&mut iv);
+    // Spawn heavy CPU work on a dedicated thread
+    tauri::async_runtime::spawn_blocking(move || {
+        // 1. Prepare Crypto Components
+        let passphrase = get_stable_passphrase();
+        let mut salt = [0u8; 16];
+        let mut iv = [0u8; 12];
+        OsRng.fill_bytes(&mut salt);
+        OsRng.fill_bytes(&mut iv);
 
-    // 2. Derive Key & Encrypt
-    let key_bytes = derive_key(&passphrase, &salt);
-    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    let cipher = Aes256Gcm::new(key);
-    let nonce = Nonce::from_slice(&iv);
+        // 2. Derive Key & Encrypt (This was the lag culprit!)
+        let key_bytes = derive_key(&passphrase, &salt);
+        let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+        let cipher = Aes256Gcm::new(key);
+        let nonce = Nonce::from_slice(&iv);
 
-    let encrypted_data = cipher
-        .encrypt(nonce, plaintext.as_bytes())
-        .map_err(|e| format!("Encryption failed: {}", e))?;
+        let encrypted_data = cipher
+            .encrypt(nonce, plaintext.as_bytes())
+            .map_err(|e| format!("Encryption failed: {}", e))?;
 
-    let (ciphertext, tag) = encrypted_data.split_at(encrypted_data.len() - 16);
+        let (ciphertext, tag) = encrypted_data.split_at(encrypted_data.len() - 16);
 
-    // 3. Construct Payload
-    let payload = serde_json::json!({
-        "version": 1,
-        "algo": "aes-256-gcm",
-        "salt": general_purpose::STANDARD.encode(salt),
-        "iv": general_purpose::STANDARD.encode(iv),
-        "tag": general_purpose::STANDARD.encode(tag),
-        "ciphertext": general_purpose::STANDARD.encode(ciphertext)
-    });
+        // 3. Construct Payload
+        let payload = serde_json::json!({
+            "version": 1,
+            "algo": "aes-256-gcm",
+            "salt": general_purpose::STANDARD.encode(salt),
+            "iv": general_purpose::STANDARD.encode(iv),
+            "tag": general_purpose::STANDARD.encode(tag),
+            "ciphertext": general_purpose::STANDARD.encode(ciphertext)
+        });
 
-    // 4. Save to File
-    let config_dir = get_app_config_dir(&app);
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
-    }
-
-    let file_path = config_dir.join(format!("{}_key.json", provider));
-    let mut file = File::create(&file_path).map_err(|e| e.to_string())?;
-
-    file.write_all(
-        serde_json::to_string_pretty(&payload)
-            .unwrap()
-            .as_bytes(),
-    )
-    .map_err(|e| e.to_string())?;
-
-    // 5. Close ImgBB Window if applicable
-    if provider == "imgbb" {
-        if let Some(win) = app.get_webview_window("imgbb-setup") {
-            let _ = win.close();
+        // 4. Save to File
+        let config_dir = get_app_config_dir(&app);
+        if !config_dir.exists() {
+            fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
         }
-    }
 
-    Ok(file_path.to_string_lossy().to_string())
+        let file_path = config_dir.join(format!("{}_key.json", provider));
+        let mut file = File::create(&file_path).map_err(|e| e.to_string())?;
+
+        file.write_all(
+            serde_json::to_string_pretty(&payload)
+                .unwrap()
+                .as_bytes(),
+        )
+        .map_err(|e| e.to_string())?;
+
+        // 5. Close ImgBB Window if applicable (Run on main thread via dispatch if needed, 
+        // but close() is thread-safe in Tauri v2 mostly. If it crashes, use app.run_on_main_thread)
+        if provider == "imgbb" {
+            if let Some(win) = app.get_webview_window("imgbb-setup") {
+                let _ = win.close();
+            }
+        }
+
+        Ok(file_path.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -367,8 +372,20 @@ async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_external_url(url: String) {
-    let _ = opener::open(url);
+fn close_imgbb_window(app: AppHandle) {
+    if let Some(win) = app.get_webview_window("imgbb-setup") {
+        let _ = win.close();
+    }
+}
+
+#[tauri::command]
+async fn open_external_url(url: String) -> Result<(), String> {
+    // We wrap in spawn_blocking just to be 100% sure xdg-open doesn't block the async runtime
+    tauri::async_runtime::spawn_blocking(move || {
+        let _ = opener::open(url);
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -443,6 +460,7 @@ pub fn run() {
             reset_api_key,
             // Window / Utils
             open_imgbb_window,
+            close_imgbb_window,
             open_external_url,
             clear_cache,
             // Stubs

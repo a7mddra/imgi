@@ -1,6 +1,5 @@
-/* FILE: src/features/auth/layouts/AuthShared.module.css */
-
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
+@import '../../../styles/animations.css';
 
 .viewContainer {
   width: 100vw;
@@ -139,13 +138,8 @@
   height: 20px;
   border-radius: 50%;
   border-left-color: #000;
-  animation: spin 1s linear infinite;
+  animation: rotate 1s linear infinite;
   display: block;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .btnBorder {
@@ -169,10 +163,6 @@
   mask-composite: exclude;
   pointer-events: none;
   z-index: -1;
-}
-
-@keyframes rotateBorder {
-  to { --angle: 360deg; }
 }
 
 .loginBtn::before {

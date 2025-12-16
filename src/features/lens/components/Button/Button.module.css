@@ -37,8 +37,8 @@
 
 /* Spinner Animation */
 .spinner {
-  animation: spin 1s linear infinite;
-  transform-origin: center;
+  animation: rotate 1s linear infinite;
+  display: block;
 }
 
 .reelWindow {
