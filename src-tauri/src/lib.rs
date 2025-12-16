@@ -1,7 +1,5 @@
-// FILE: src-tauri/src/lib.rs
-
 use aes_gcm::{
-    aead::{Aead, KeyInit},
+    aead::{Aead, KeyInit, Payload},
     Aes256Gcm, Key, Nonce,
 };
 use base64::{engine::general_purpose, Engine as _};
@@ -20,13 +18,15 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
-// --- STATE MANAGEMENT ---
+// ============================================================================
+// STATE MANAGEMENT
+// ============================================================================
 
 struct AppState {
     // Stores "data:image/png;base64,..." for the initial load
-    image_data: Arc<Mutex<Option<String>>>, 
+    image_data: Arc<Mutex<Option<String>>>,
     // Kill switch for the background clipboard thread
-    watcher_running: Arc<AtomicBool>, 
+    watcher_running: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -38,9 +38,12 @@ impl AppState {
     }
 }
 
-// --- HELPER FUNCTIONS ---
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
-// 1. Image Helpers
+// --- Image Helpers ---
+
 fn process_and_store_image(path: &str, state: &State<AppState>) -> Result<String, String> {
     let mut file = File::open(path).map_err(|e| format!("Failed to open file: {}", e))?;
     let mut buffer = Vec::new();
@@ -70,7 +73,8 @@ fn process_bytes_internal(buffer: Vec<u8>, state: &State<AppState>) -> Result<St
     Ok(data_url)
 }
 
-// 2. Crypto Helpers
+// --- Crypto & File Helpers ---
+
 fn get_app_config_dir(app: &AppHandle) -> PathBuf {
     app.path()
         .app_config_dir()
@@ -93,7 +97,7 @@ fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; 32] {
     key
 }
 
-// ADD THIS HELPER
+// Decrypts a specific provider key file (gemini_key.json or imgbb_key.json)
 fn get_decrypted_key_internal(app: &AppHandle, provider: &str) -> Option<String> {
     let config_dir = get_app_config_dir(app);
     let file_path = config_dir.join(format!("{}_key.json", provider));
@@ -107,10 +111,18 @@ fn get_decrypted_key_internal(app: &AppHandle, provider: &str) -> Option<String>
     let payload: serde_json::Value = serde_json::from_str(&file_content).ok()?;
 
     // 2. Decode Base64 components
-    let salt = general_purpose::STANDARD.decode(payload["salt"].as_str()?).ok()?;
-    let iv = general_purpose::STANDARD.decode(payload["iv"].as_str()?).ok()?;
-    let tag = general_purpose::STANDARD.decode(payload["tag"].as_str()?).ok()?;
-    let ciphertext = general_purpose::STANDARD.decode(payload["ciphertext"].as_str()?).ok()?;
+    let salt = general_purpose::STANDARD
+        .decode(payload["salt"].as_str()?)
+        .ok()?;
+    let iv = general_purpose::STANDARD
+        .decode(payload["iv"].as_str()?)
+        .ok()?;
+    let tag = general_purpose::STANDARD
+        .decode(payload["tag"].as_str()?)
+        .ok()?;
+    let ciphertext = general_purpose::STANDARD
+        .decode(payload["ciphertext"].as_str()?)
+        .ok()?;
 
     // 3. Re-Derive Key
     let passphrase = get_stable_passphrase();
@@ -125,13 +137,16 @@ fn get_decrypted_key_internal(app: &AppHandle, provider: &str) -> Option<String>
 
     // 5. Decrypt
     let plaintext_bytes = cipher.decrypt(nonce, encrypted_data.as_ref()).ok()?;
-    
+
     String::from_utf8(plaintext_bytes).ok()
 }
 
-// --- TAURI COMMANDS ---
+// ============================================================================
+// TAURI COMMANDS
+// ============================================================================
 
-// 1. Image Commands
+// --- 1. Image Commands ---
+
 #[tauri::command]
 fn get_initial_image(state: State<AppState>) -> Option<String> {
     let image_lock = state.image_data.lock();
@@ -161,14 +176,16 @@ fn read_image_file(path: String, state: State<AppState>) -> Result<serde_json::V
     }))
 }
 
-// 2. Auth & Watcher Commands
+// --- 2. Auth & Watcher Commands ---
 
 #[tauri::command]
-async fn start_clipboard_watcher(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    // 1. Stop any existing watcher
+async fn start_clipboard_watcher(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    // 1. Stop any existing watcher to prevent duplicates
     if state.watcher_running.load(Ordering::SeqCst) {
         state.watcher_running.store(false, Ordering::SeqCst);
-        // Short wait to ensure previous thread exits
         thread::sleep(Duration::from_millis(500));
     }
 
@@ -182,9 +199,7 @@ async fn start_clipboard_watcher(app: AppHandle, state: State<'_, AppState>) -> 
         let mut last_text = String::new();
 
         while running_flag.load(Ordering::SeqCst) {
-            // FIX: Re-initialize the clipboard context EVERY LOOP.
-            // This forces a fresh connection to the OS clipboard server, 
-            // bypassing "stale handle" issues when the window loses focus.
+            // FIX: Re-initialize context every loop to fix "stale handle" on focus loss
             match arboard::Clipboard::new() {
                 Ok(mut clipboard) => {
                     if let Ok(text) = clipboard.get_text() {
@@ -193,27 +208,34 @@ async fn start_clipboard_watcher(app: AppHandle, state: State<'_, AppState>) -> 
                         if !trimmed.is_empty() && trimmed != last_text {
                             last_text = trimmed.clone();
 
-                            // LOGIC: Check patterns
+                            // Pattern Matching
                             if trimmed.starts_with("AIzaS") {
-                                println!("Gemini Key Detected: {}", trimmed);
-                                let _ = app_handle.emit("clipboard-text", serde_json::json!({
-                                    "provider": "gemini", 
-                                    "key": trimmed 
-                                }));
-                            } else if trimmed.len() == 32 && trimmed.chars().all(char::is_alphanumeric) {
-                                println!("ImgBB Key Detected: {}", trimmed);
-                                let _ = app_handle.emit("clipboard-text", serde_json::json!({
-                                    "provider": "imgbb", 
-                                    "key": trimmed 
-                                }));
+                                println!("Gemini Key Detected");
+                                let _ = app_handle.emit(
+                                    "clipboard-text",
+                                    serde_json::json!({
+                                        "provider": "gemini", 
+                                        "key": trimmed 
+                                    }),
+                                );
+                            } else if trimmed.len() == 32
+                                && trimmed.chars().all(char::is_alphanumeric)
+                            {
+                                println!("ImgBB Key Detected");
+                                let _ = app_handle.emit(
+                                    "clipboard-text",
+                                    serde_json::json!({
+                                        "provider": "imgbb", 
+                                        "key": trimmed 
+                                    }),
+                                );
                             }
                         }
                     }
-                },
-                Err(e) => eprintln!("Clipboard init failed (retrying in 1s): {}", e),
+                }
+                Err(e) => eprintln!("Clipboard init error: {}", e),
             }
-            
-            // Sleep for 1 second before next check
+
             thread::sleep(Duration::from_millis(1000));
         }
     });
@@ -250,7 +272,6 @@ async fn encrypt_and_save(
         .encrypt(nonce, plaintext.as_bytes())
         .map_err(|e| format!("Encryption failed: {}", e))?;
 
-    // Split tag (last 16 bytes)
     let (ciphertext, tag) = encrypted_data.split_at(encrypted_data.len() - 16);
 
     // 3. Construct Payload
@@ -272,10 +293,14 @@ async fn encrypt_and_save(
     let file_path = config_dir.join(format!("{}_key.json", provider));
     let mut file = File::create(&file_path).map_err(|e| e.to_string())?;
 
-    file.write_all(serde_json::to_string_pretty(&payload).unwrap().as_bytes())
-        .map_err(|e| e.to_string())?;
+    file.write_all(
+        serde_json::to_string_pretty(&payload)
+            .unwrap()
+            .as_bytes(),
+    )
+    .map_err(|e| e.to_string())?;
 
-    // 5. Close ImgBB Window if that was the provider
+    // 5. Close ImgBB Window if applicable
     if provider == "imgbb" {
         if let Some(win) = app.get_webview_window("imgbb-setup") {
             let _ = win.close();
@@ -291,7 +316,31 @@ fn check_file_exists(app: AppHandle, filename: String) -> bool {
     path.exists()
 }
 
-// 3. Window & Utility Commands
+// --- 3. Key Retrieval & Reset ---
+
+// Dedicated getter for Gemini (used by useSystemSync)
+#[tauri::command]
+fn get_api_key(app: AppHandle) -> String {
+    get_decrypted_key_internal(&app, "gemini").unwrap_or_default()
+}
+
+// Generic getter (used by useLens for imgbb)
+#[tauri::command]
+fn get_key(app: AppHandle, provider: String) -> String {
+    get_decrypted_key_internal(&app, &provider).unwrap_or_default()
+}
+
+// Deletes both keys to force re-auth
+#[tauri::command]
+fn reset_api_key(app: AppHandle) {
+    let config_dir = get_app_config_dir(&app);
+    let _ = fs::remove_file(config_dir.join("gemini_key.json"));
+    let _ = fs::remove_file(config_dir.join("imgbb_key.json"));
+    // Also remove legacy profile if it exists
+    let _ = fs::remove_file(config_dir.join("profile.json"));
+}
+
+// --- 4. Window & Utility Commands ---
 
 #[tauri::command]
 async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
@@ -330,52 +379,46 @@ fn clear_cache(app: AppHandle) {
     });
 }
 
-// 4. Stubs (Mocking existing API calls to prevent crashes)
+// --- 5. Stubs (Mocking UI-only settings for now) ---
 
 #[tauri::command]
-fn get_key(app: AppHandle, provider: String) -> String {
-    get_decrypted_key_internal(&app, &provider).unwrap_or_default()
+fn get_prompt() -> String {
+    "".to_string()
 }
-
 #[tauri::command]
-fn get_prompt() -> String { "".to_string() }
-
-#[tauri::command]
-fn get_model() -> String { "gemini-2.5-flash".to_string() }
-
+fn get_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
 #[tauri::command]
 fn get_user_data() -> serde_json::Value {
     serde_json::json!({ "name": "Dev User", "email": "dev@spatialshot.app", "avatar": "" })
 }
-
 #[tauri::command]
-fn get_session_path() -> Option<String> { None }
-
+fn get_session_path() -> Option<String> {
+    None
+}
 #[tauri::command]
 fn save_prompt(_prompt: String) {}
-
 #[tauri::command]
 fn save_model(_model: String) {}
-
 #[tauri::command]
 fn set_theme(_theme: String) {}
-
 #[tauri::command]
-fn reset_prompt() -> String { "".to_string() }
-
+fn reset_prompt() -> String {
+    "".to_string()
+}
 #[tauri::command]
-fn reset_model() -> String { "gemini-2.5-flash".to_string() }
-
+fn reset_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
 #[tauri::command]
 fn logout() {}
-
-#[tauri::command]
-fn reset_api_key() {}
-
 #[tauri::command]
 fn trigger_lens_search() {}
 
-// --- ENTRY POINT ---
+// ============================================================================
+// ENTRY POINT
+// ============================================================================
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -391,17 +434,19 @@ pub fn run() {
             process_image_bytes,
             read_image_file,
             get_initial_image,
-            // Auth / Watcher
+            // Auth / Watcher / Keys
             start_clipboard_watcher,
             stop_clipboard_watcher,
             encrypt_and_save,
             check_file_exists,
+            get_api_key, // Specific Gemini
+            get_key,     // Generic (ImgBB)
+            reset_api_key,
             // Window / Utils
             open_imgbb_window,
             open_external_url,
             clear_cache,
             // Stubs
-            get_api_key,
             get_prompt,
             get_model,
             get_user_data,
@@ -412,7 +457,6 @@ pub fn run() {
             reset_prompt,
             reset_model,
             logout,
-            reset_api_key,
             trigger_lens_search
         ])
         .setup(|app| {
@@ -420,6 +464,7 @@ pub fn run() {
 
             // CLI Argument Handling
             let args: Vec<String> = std::env::args().collect();
+            // Skip binary name (0), find first arg that isn't a flag
             if let Some(path) = args.iter().skip(1).find(|arg| !arg.starts_with("-")) {
                 println!("CLI Image argument detected: {}", path);
                 let state = handle.state::<AppState>();
