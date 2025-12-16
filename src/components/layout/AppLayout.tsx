@@ -25,19 +25,36 @@ export const AppLayout: React.FC = () => {
 
   // Listen for CLI image path on startup
   useEffect(() => {
+    const initStartupImage = async () => {
+      try {
+        // 1. Check if Rust already loaded an image from CLI args during setup
+        const initialImage = await invoke<string | null>('get_initial_image');
+        if (initialImage) {
+          console.log("Found CLI image in state, loading...");
+          handleImageReady(initialImage);
+        }
+      } catch (e) {
+        console.error("Failed to check initial image:", e);
+      }
+    };
+
+    // Run immediate check
+    initStartupImage();
+
+    // 2. Keep the listener for runtime file associations (e.g. "Open With" while app is running)
     const unlisten = listen<string>('image-path', async (event) => {
       const imagePath = event.payload;
       if (imagePath) {
         try {
-          console.log("Processing CLI image:", imagePath)
+          console.log("Event received for image:", imagePath);
           const base64 = await invoke<string>('process_image_path', { path: imagePath });
           handleImageReady(base64);
         } catch (error) {
-          console.error("Failed to process CLI image:", error);
+          console.error("Failed to process CLI image event:", error);
         }
       }
     });
-  
+   
     return () => {
       unlisten.then(f => f());
     };
@@ -64,6 +81,9 @@ export const AppLayout: React.FC = () => {
   // --- Handlers ---
   
   const handleImageReady = (base64Full: string) => {
+    // Basic validation to ensure we have a valid data URL
+    if (!base64Full || !base64Full.includes(',')) return;
+
     const [header, base64Data] = base64Full.split(',');
     const mimeType = header.replace('data:', '').replace(';base64', '');
     
