@@ -149,7 +149,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     } catch (e) {
         console.error(e);
         const msg = e instanceof Error ? e.message : String(e);
-        showToast(`Failed to save settings: ${msg}`, "error");
+        showToast(`Failed to save`, "error");
     }
   };
 
@@ -161,8 +161,16 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     invoke("logout");
   };
 
-  const handleResetAPIKey = () => {
-    invoke("reset_api_key");
+  const handleResetAPIKey = async () => {
+    await invoke("reset_api_key");
+    // Clear React State immediately
+    setApiKey("");
+    setHasAgreed(null); // Force re-check
+    
+    // Prevent "Update Page" from hijacking the reload
+    sessionStorage.setItem('update_dismissed', 'true');
+    
+    window.location.reload();
   };
 
   return {

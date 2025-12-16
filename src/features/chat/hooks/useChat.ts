@@ -49,17 +49,21 @@ export const useChatEngine = ({
     imgData: { base64: string; mimeType: string } | null,
     isRetry = false
   ) => {
-    // Always start with loading true to show shimmer
     setIsLoading(true);
     setError(null);
+
+    // FIX: Critical validation
+    if (!key) {
+        setIsLoading(false);
+        setError("API Key missing. Please reset in settings.");
+        return;
+    }
 
     if (!isRetry) {
       resetInitialUi();
       setMessages([]);
       setFirstResponseId(null);
       setLastSentMessage(null);
-      
-      // Artificial delay to show shimmer effect on startup
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 

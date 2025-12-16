@@ -53,9 +53,13 @@ export const startNewChat = async (
   }
 };
 
+const cleanBase64 = (data: string) => {
+  return data.replace(/^data:image\/[a-z]+;base64,/, "");
+};
+
 export const startNewChatStream = async (
   modelId: string,
-  imageBase64: string,
+  imageBase64: string, // This has the header
   mimeType: string,
   systemPrompt: string,
   onToken: (token: string) => void
@@ -65,8 +69,7 @@ export const startNewChatStream = async (
   chatSession = ai.chats.create({
     model: modelId,
     config: {
-      systemInstruction:
-        "You are a helpful AI assistant specialized in analyzing images.",
+      systemInstruction: systemPrompt, // Moved prompt to system instruction for cleaner history
     },
   });
 
@@ -74,7 +77,7 @@ export const startNewChatStream = async (
     {
       inlineData: {
         mimeType,
-        data: imageBase64,
+        data: cleanBase64(imageBase64), // <--- FIX: Clean it here
       },
     },
     {

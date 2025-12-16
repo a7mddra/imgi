@@ -183,59 +183,58 @@ async fn start_clipboard_watcher(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    // 1. Stop any existing watcher to prevent duplicates
     if state.watcher_running.load(Ordering::SeqCst) {
         state.watcher_running.store(false, Ordering::SeqCst);
         thread::sleep(Duration::from_millis(500));
     }
 
-    // 2. Set flag to true
     state.watcher_running.store(true, Ordering::SeqCst);
     let running_flag = state.watcher_running.clone();
     let app_handle = app.clone();
 
-    // 3. Spawn background thread
     thread::spawn(move || {
         let mut last_text = String::new();
+        
+        // FIX 1: Initialize Clipboard OUTSIDE the loop
+        // If it fails to init (e.g. on a weird headless setup), we exit the thread to prevent log spam/lag.
+        let mut clipboard = match arboard::Clipboard::new() {
+            Ok(cb) => cb,
+            Err(e) => {
+                eprintln!("Failed to init clipboard: {}", e);
+                return; 
+            }
+        };
 
         while running_flag.load(Ordering::SeqCst) {
-            // FIX: Re-initialize context every loop to fix "stale handle" on focus loss
-            match arboard::Clipboard::new() {
-                Ok(mut clipboard) => {
-                    if let Ok(text) = clipboard.get_text() {
-                        let trimmed = text.trim().to_string();
+            // FIX 2: Use the existing instance
+            if let Ok(text) = clipboard.get_text() {
+                let trimmed = text.trim().to_string();
 
-                        if !trimmed.is_empty() && trimmed != last_text {
-                            last_text = trimmed.clone();
+                if !trimmed.is_empty() && trimmed != last_text {
+                    last_text = trimmed.clone();
 
-                            // Pattern Matching
-                            if trimmed.starts_with("AIzaS") {
-                                println!("Gemini Key Detected");
-                                let _ = app_handle.emit(
-                                    "clipboard-text",
-                                    serde_json::json!({
-                                        "provider": "gemini", 
-                                        "key": trimmed 
-                                    }),
-                                );
-                            } else if trimmed.len() == 32
-                                && trimmed.chars().all(char::is_alphanumeric)
-                            {
-                                println!("ImgBB Key Detected");
-                                let _ = app_handle.emit(
-                                    "clipboard-text",
-                                    serde_json::json!({
-                                        "provider": "imgbb", 
-                                        "key": trimmed 
-                                    }),
-                                );
-                            }
-                        }
+                    if trimmed.starts_with("AIzaS") {
+                        println!("Gemini Key Detected");
+                        let _ = app_handle.emit(
+                            "clipboard-text",
+                            serde_json::json!({
+                                "provider": "gemini", 
+                                "key": trimmed 
+                            }),
+                        );
+                    } else if trimmed.len() == 32 && trimmed.chars().all(char::is_alphanumeric) {
+                         println!("ImgBB Key Detected");
+                         let _ = app_handle.emit(
+                            "clipboard-text",
+                            serde_json::json!({
+                                "provider": "imgbb", 
+                                "key": trimmed 
+                            }),
+                        );
                     }
                 }
-                Err(e) => eprintln!("Clipboard init error: {}", e),
             }
-
+            // FIX 3: Sleep longer (1s is fine, but moving 'new' out is the real fix)
             thread::sleep(Duration::from_millis(1000));
         }
     });

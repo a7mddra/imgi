@@ -244,6 +244,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         onModelChange={onModelChange}
         isLoading={isLoading}
         isChatMode={isChatMode}
+        startupImage={startupImage}
       />
 
       <ChatArea

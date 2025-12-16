@@ -1,13 +1,36 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
-type AuthStage = 'GEMINI_SETUP' | 'LOGIN' | 'AUTHENTICATED';
+// Added 'LOADING' stage to prevent flash of setup screen
+type AuthStage = 'LOADING' | 'GEMINI_SETUP' | 'LOGIN' | 'AUTHENTICATED';
 
 export const useAuth = () => {
-  const [authStage, setAuthStage] = useState<AuthStage>('GEMINI_SETUP');
+  const [authStage, setAuthStage] = useState<AuthStage>('LOADING'); 
   const [isWatcherActive, setIsWatcherActive] = useState(false);
+
+  // 1. NEW: Check for existing keys on startup
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        // Check if gemini key exists
+        const hasKey = await invoke<boolean>('check_file_exists', { filename: 'gemini_key.json' });
+        
+        if (hasKey) {
+            // Optional: Check for profile.json if you want the Google Login flow
+            const hasProfile = await invoke<boolean>('check_file_exists', { filename: 'profile.json' });
+            setAuthStage(hasProfile ? 'AUTHENTICATED' : 'LOGIN');
+        } else {
+            setAuthStage('GEMINI_SETUP');
+        }
+      } catch (e) {
+        console.error("Auth check failed:", e);
+        setAuthStage('GEMINI_SETUP');
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   useEffect(() => {
     // Listen for clipboard events from Rust
@@ -18,25 +41,22 @@ export const useAuth = () => {
       await invoke('stop_clipboard_watcher');
       setIsWatcherActive(false);
 
-      // 2. Encrypt & Save (Rust handles the file writing)
+      // 2. Encrypt & Save
       await invoke('encrypt_and_save', { plaintext: key, provider });
 
-      // 3. Handle Transitions
+      // 3. Handle State Transitions
       if (provider === 'gemini') {
-        // Check if user has a profile (legacy logic) or just go to Login
         const hasProfile = await invoke('check_file_exists', { filename: 'profile.json' });
-        if (hasProfile) {
-            setAuthStage('AUTHENTICATED'); // Skip login if profile exists
-        } else {
-            setAuthStage('LOGIN');
-        }
-      } 
-      // Note: ImgBB window closing is handled inside the Rust 'encrypt_and_save' command
+        setAuthStage(hasProfile ? 'AUTHENTICATED' : 'LOGIN');
+        // RELOAD page to ensure useSystemSync picks up the new key for the Chat Engine
+        window.location.reload(); 
+      }
+      
+      // If ImgBB, we don't change auth stage, just notify or let the user click Lens again
     });
 
     return () => {
       unlisten.then(f => f());
-      // Cleanup: stop watcher if component unmounts
       invoke('stop_clipboard_watcher');
     };
   }, []);
@@ -48,18 +68,12 @@ export const useAuth = () => {
   };
 
   const completeGeminiSetup = () => {
-     // This is called by the UI button
      const deepLink = "https://aistudio.google.com/app/apikey";
      invoke("open_external_url", { url: deepLink });
      startWatcher();
   };
   
-  const startImgbbSetup = async () => {
-      // Called by ImgBB Component
-      const deepLink = "https://api.imgbb.com/";
-      invoke("open_external_url", { url: deepLink });
-      await invoke('start_clipboard_watcher');
-  };
+  // Removed startImgbbSetup from here (moved logic to useLens)
 
   const login = () => {
     setAuthStage('AUTHENTICATED');
@@ -69,7 +83,6 @@ export const useAuth = () => {
     authStage, 
     isAuthenticated: authStage === 'AUTHENTICATED',
     completeGeminiSetup,
-    startImgbbSetup, // Expose this for ImgBB component
     isWatcherActive,
     login
   };

@@ -77,8 +77,12 @@ export const AppLayout: React.FC = () => {
   
   // Initialize update state based on storage
   const [pendingUpdate] = useState(() => getPendingUpdate());
-  const [showUpdate, setShowUpdate] = useState(!!pendingUpdate);
-  
+  const [showUpdate, setShowUpdate] = useState(() => {
+     // FIX: Don't show if we just reloaded for Auth reasons
+     const wasDismissed = sessionStorage.getItem('update_dismissed');
+     return !!pendingUpdate && !wasDismissed;
+  });
+
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
 
   // --- Handlers ---
@@ -127,6 +131,8 @@ export const AppLayout: React.FC = () => {
           notes={pendingUpdate.notes}
           onClose={() => {
             setShowUpdate(false);
+            // FIX: Remember dismissal for this session
+            sessionStorage.setItem('update_dismissed', 'true');
           }} 
         />
       </div>
@@ -134,9 +140,7 @@ export const AppLayout: React.FC = () => {
   }
 
   // 1. Loading State (Checking file)
-  if (system.hasAgreed === null) {
-      // Return null or a subtle loader to avoid flicker.
-      // Since it's fast file I/O, a black screen (matching app bg) is usually best.
+  if (system.hasAgreed === null || auth.authStage === 'LOADING') {
       return <div className="h-screen w-screen bg-neutral-950" />;
   }
 

@@ -41,6 +41,7 @@ interface ChatHeaderProps {
   onModelChange: (model: string) => void;
   isLoading: boolean;
   isChatMode: boolean;
+  startupImage: { base64: string; mimeType: string } | null;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -71,6 +72,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onModelChange,
   isLoading,
   isChatMode,
+  startupImage,
 }) => {
   return (
     <header className={styles.header}>
@@ -134,7 +136,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
 
-      <LensButton isChatMode={isChatMode} />
+      <LensButton
+      isChatMode={isChatMode}
+      startupImage={startupImage}
+      />
     </header>
   );
 };
