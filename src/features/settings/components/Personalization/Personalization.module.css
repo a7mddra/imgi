@@ -82,6 +82,7 @@
 .subview-content {
   padding: 10px;
   padding-top: 0;
+  padding-left: 16px;
   flex: 1;
   display: flex;
   flex-direction: column;

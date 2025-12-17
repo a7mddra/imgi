@@ -63,7 +63,7 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
         </button>
       </div>
       <div className={styles["subview-content"]}>
-        <label htmlFor="promptTextarea">Customize Prompt</label>
+        <label htmlFor="promptTextarea">Customize Prompt 💬</label>
         <div className={styles["prompt-container"]}>
           <textarea
             className={styles["prompt-textarea"]}
@@ -77,7 +77,7 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
         </div>
 
         <div className={styles["form-group"]}>
-          <label>Default Model</label>
+          <label>Default Model 🧠</label>
           <div className={styles["model-switcher"]}>
             <div className={styles["model-info"]}>
               <span className={styles["model-name"]}>
