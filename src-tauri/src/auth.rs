@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
+use std::io::Write;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
 use tiny_http::{Server, Response, Header};
@@ -147,8 +148,9 @@ pub fn start_google_auth_flow(app: AppHandle, config_dir: PathBuf) -> Result<(),
             // D. Save to Disk
             let user_data = SavedProfile { name, email, avatar };
             let profile_path = config_dir.join("profile.json");
-            let file = File::create(profile_path).map_err(|e| e.to_string())?;
-            serde_json::to_writer_pretty(file, &user_data).map_err(|e| e.to_string())?;
+            let mut file = File::create(profile_path).map_err(|e| e.to_string())?;
+            serde_json::to_writer_pretty(&mut file, &user_data).map_err(|e| e.to_string())?;
+            file.flush().map_err(|e| e.to_string())?;
 
             // E. Notify Frontend
             let _ = app.emit("auth-success", &user_data);

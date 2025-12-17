@@ -78,8 +78,8 @@ export const useLens = (
     if (isLensLoading || waitingForKey) return;
 
     // 1. Instant Open if ready
-    if (setCachedUrl) {
-        await invoke("open_external_url", { url: setCachedUrl });
+    if (cachedUrl) {
+        await invoke("open_external_url", { url: cachedUrl });
         return;
     }
 

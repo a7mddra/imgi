@@ -30,6 +30,8 @@ struct AppState {
     image_data: Arc<Mutex<Option<String>>>,
     // Kill switch for the background clipboard thread
     watcher_running: Arc<AtomicBool>,
+    // Lock to prevent multiple auth flows
+    auth_running: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -37,6 +39,7 @@ impl AppState {
         Self {
             image_data: Arc::new(Mutex::new(None)),
             watcher_running: Arc::new(AtomicBool::new(false)),
+            auth_running: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -346,17 +349,35 @@ async fn reset_api_key(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn start_google_auth(app: AppHandle) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
+async fn start_google_auth(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    // Check if auth is already running
+    if state.auth_running.load(Ordering::SeqCst) {
+        return Err("Authentication already in progress".into());
+    }
+    
+    // Set lock
+    state.auth_running.store(true, Ordering::SeqCst);
+    let auth_lock = state.auth_running.clone();
+
+    // Spawn blocking task
+    let result = tauri::async_runtime::spawn_blocking(move || {
         let config_dir = get_app_config_dir(&app);
         if !config_dir.exists() {
-            fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+             match fs::create_dir_all(&config_dir) {
+                Ok(_) => {},
+                Err(e) => return Err(e.to_string()),
+             }
         }
         // Call the auth module (runs local server)
         auth::start_google_auth_flow(app, config_dir)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await;
+
+    // Release lock regardless of outcome
+    auth_lock.store(false, Ordering::SeqCst);
+
+    // Handle spawn error or internal error
+    result.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

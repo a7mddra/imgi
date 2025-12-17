@@ -105,6 +105,17 @@ export const AppLayout: React.FC = () => {
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
 
+  // FIX: Listener must be at top level to be active during Login Screen
+  useEffect(() => {
+    const unlisten = listen<any>('auth-success', (event) => {
+        // 1. Update User Data UI immediately (No File Read needed!)
+        system.updateUserData(event.payload);
+        // 2. Switch to Chat UI (No Reload!)
+        auth.login(); 
+    });
+    return () => { unlisten.then(f => f()); };
+  }, []);
+
   // --- Handlers ---
   
   const handleImageReady = (base64Full: string) => {
@@ -203,15 +214,6 @@ export const AppLayout: React.FC = () => {
     return <LoginScreen onComplete={auth.login} />;
   }
 
-  useEffect(() => {
-    const unlisten = listen<any>('auth-success', (event) => {
-        // 1. Update User Data UI immediately (No File Read needed!)
-        system.updateUserData(event.payload);
-        // 2. Switch to Chat UI (No Reload!)
-        auth.login(); 
-    });
-    return () => { unlisten.then(f => f()); };
-  }, []);
   // 4. Main Chat Interface
   return (
     <div

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import styles from "../../layouts/AuthLayout.module.css";
 
 interface LoginScreenProps {
@@ -9,18 +8,6 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
-
-  // Listen for the "auth-success" event from Rust
-  useEffect(() => {
-    const unlistenPromise = listen('auth-success', (event) => {
-        // Auth successful!
-        // We can reload or just call onComplete. 
-        // Reloading is safer to ensure all hooks (useSystemSync) pick up the new profile.json
-        window.location.reload();
-    });
-    
-    return () => { unlistenPromise.then(f => f()); };
-  }, []);
 
   const handleClick = async () => {
     if (isLoading) return;

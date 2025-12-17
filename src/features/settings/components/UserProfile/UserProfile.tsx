@@ -23,6 +23,13 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   const [isEmailOverflowing, setIsEmailOverflowing] = useState(false);
   const emailRef = useRef<HTMLParagraphElement>(null);
 
+  const [imageError, setImageError] = useState(false);
+
+  // Reset error state if the avatar URL changes (e.g., fresh login)
+  useEffect(() => {
+    setImageError(false);
+  }, [avatarSrc]);
+
   useEffect(() => {
     const checkOverflow = () => {
       if (emailRef.current) {
@@ -36,27 +43,30 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     window.addEventListener("resize", checkOverflow);
     return () => window.removeEventListener("resize", checkOverflow);
   }, [userEmail]);
+
   const renderAvatar = () => {
-    // 1. If we have a valid source AND it's not the generic Google placeholder
-    const isValidSource = avatarSrc && !avatarSrc.includes("googleusercontent.com/profile/picture/0");
+    // We try to render the image if:
+    // 1. We have a source
+    // 2. We haven't encountered a load error yet
+    // 3. It's not the generic "blue silhouette" placeholder (optional preference)
+    const isValidSource = avatarSrc && !imageError && !avatarSrc.includes("googleusercontent.com/profile/picture/0");
     
     if (isValidSource) {
       return (
         <img 
+            key={avatarSrc} // Force re-mount if URL changes
             className={styles["avatar"]} 
             src={avatarSrc} 
             alt={userName} 
-            onError={(e) => {
-                // If the image fails to load, force hide it so fallback shows
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden'); 
-            }}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={() => setImageError(true)}
         />
       );
     }
 
-    // 2. Fallback: Initials
-    const initial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
+    // Fallback: Initials
+    const initial = userName ? userName.charAt(0).toUpperCase() : (userEmail ? userEmail.charAt(0).toUpperCase() : "?");
     
     return (
       <div
