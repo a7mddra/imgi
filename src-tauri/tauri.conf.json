@@ -5,7 +5,7 @@
   "identifier": "spatialshot",
   "build": {
     "beforeDevCommand": "npm run vite", 
-    "devUrl": "http://localhost:3000",
+    "devUrl": "http://localhost:3456",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },

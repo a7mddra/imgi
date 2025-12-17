@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [react()],
   // Tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 3000,
+    port: 3456,
     strictPort: true,
   },
   // Environment variables prefix

@@ -81,10 +81,10 @@ export const useSystemSync = (onToggleSettings: () => void) => {
 
     const setupIpc = async () => {
       try {
-        const key = await invoke<string>("get_api_key");
-        if (key) {
-          setApiKey(key);
-          initializeGemini(key);
+        const apiKey = await invoke<string>("get_api_key", { provider: "gemini" });
+        if (apiKey) {
+          setApiKey(apiKey);
+          initializeGemini(apiKey);
         }
 
         const userData = await invoke<any>("get_user_data");
@@ -112,25 +112,10 @@ export const useSystemSync = (onToggleSettings: () => void) => {
         }
       };
 
-      const sessionPath = await invoke<string>("get_session_path");
-      if (sessionPath) {
-        await loadImageFromPath(sessionPath);
-      }
-
       const unlistenImage = await listen<string>("image-path", (event) => {
         loadImageFromPath(event.payload);
       });
       unlisteners.push(unlistenImage);
-
-      const unlistenSettings = await listen("toggle-settings", () => {
-        onToggleSettings();
-      });
-      unlisteners.push(unlistenSettings);
-
-      const unlistenFeedback = await listen<any>("show-feedback-from-main", (event) => {
-        showToast(event.payload.message, event.payload.type);
-      });
-      unlisteners.push(unlistenFeedback);
     };
 
     setupIpc();
@@ -168,16 +153,24 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     invoke("logout");
   };
 
+// ... inside useSystemSync hook
+
   const handleResetAPIKey = async () => {
-    await invoke("reset_api_key");
-    // Clear React State immediately
-    setApiKey("");
-    setHasAgreed(null); // Force re-check
-    
-    // Prevent "Update Page" from hijacking the reload
-    sessionStorage.setItem('update_dismissed', 'true');
-    
-    window.location.reload();
+    try {
+        await invoke("reset_api_key");
+        
+        // 3. Clear State
+        setApiKey("");
+        setHasAgreed(null);
+        
+        // 4. Prevent "Update Page" hijack
+        sessionStorage.setItem('update_dismissed', 'true');
+        
+        // 5. Reload (The disk operation is guaranteed done because we awaited the promise)
+        window.location.reload();
+    } catch (e) {
+        showToast("Reset failed", "error");
+    }
   };
 
   return {

@@ -17,6 +17,7 @@ use std::sync::{
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+mod auth;
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -322,26 +323,35 @@ fn check_file_exists(app: AppHandle, filename: String) -> bool {
 
 // --- 3. Key Retrieval & Reset ---
 
+// --- 3. Key Retrieval & Reset ---
+
 // Dedicated getter for Gemini (used by useSystemSync)
 #[tauri::command]
-fn get_api_key(app: AppHandle) -> String {
-    get_decrypted_key_internal(&app, "gemini").unwrap_or_default()
+async fn get_api_key(app: AppHandle, provider: String) -> Result<String, String> {
+    // Move heavy crypto to a background thread
+    tauri::async_runtime::spawn_blocking(move || {
+        get_decrypted_key_internal(&app, &provider).unwrap_or_default()
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
-// Generic getter (used by useLens for imgbb)
+// FIX: Async + Spawn Blocking = 0ms UI Freeze
 #[tauri::command]
-fn get_key(app: AppHandle, provider: String) -> String {
-    get_decrypted_key_internal(&app, &provider).unwrap_or_default()
-}
-
-// Deletes both keys to force re-auth
-#[tauri::command]
-fn reset_api_key(app: AppHandle) {
-    let config_dir = get_app_config_dir(&app);
-    let _ = fs::remove_file(config_dir.join("gemini_key.json"));
-    let _ = fs::remove_file(config_dir.join("imgbb_key.json"));
-    // Also remove legacy profile if it exists
-    let _ = fs::remove_file(config_dir.join("profile.json"));
+async fn reset_api_key(app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let config_dir = get_app_config_dir(&app);
+        
+        // We attempt to remove all sensitive files
+        // We use .ok() to ignore errors (e.g. if file is already gone)
+        let _ = fs::remove_file(config_dir.join("gemini_key.json")).ok();
+        let _ = fs::remove_file(config_dir.join("imgbb_key.json")).ok();
+        let _ = fs::remove_file(config_dir.join("profile.json")).ok();
+        
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 // --- 4. Window & Utility Commands ---
@@ -406,8 +416,24 @@ fn get_model() -> String {
     "gemini-2.5-flash".to_string()
 }
 #[tauri::command]
-fn get_user_data() -> serde_json::Value {
-    serde_json::json!({ "name": "Dev User", "email": "dev@spatialshot.app", "avatar": "" })
+fn get_user_data(app: AppHandle) -> serde_json::Value {
+    let config_dir = get_app_config_dir(&app);
+    let profile_path = config_dir.join("profile.json");
+
+    if profile_path.exists() {
+        if let Ok(file) = File::open(profile_path) {
+            if let Ok(json) = serde_json::from_reader(file) {
+                return json;
+            }
+        }
+    }
+    
+    // Fallback if no profile exists
+    serde_json::json!({ 
+        "name": "Guest User", 
+        "email": "Not logged in", 
+        "avatar": "" 
+    })
 }
 #[tauri::command]
 fn get_session_path() -> Option<String> {
@@ -432,6 +458,23 @@ fn logout() {}
 #[tauri::command]
 fn trigger_lens_search() {}
 
+#[tauri::command]
+async fn start_google_auth(app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let config_dir = get_app_config_dir(&app);
+        
+        // Ensure config dir exists
+        if !config_dir.exists() {
+            fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+        }
+
+        // Run the blocking auth flow
+        auth::start_google_auth_flow(app, config_dir)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 // ============================================================================
 // ENTRY POINT
 // ============================================================================
@@ -455,8 +498,7 @@ pub fn run() {
             stop_clipboard_watcher,
             encrypt_and_save,
             check_file_exists,
-            get_api_key, // Specific Gemini
-            get_key,     // Generic (ImgBB)
+            get_api_key,
             reset_api_key,
             // Window / Utils
             open_imgbb_window,
@@ -474,7 +516,8 @@ pub fn run() {
             reset_prompt,
             reset_model,
             logout,
-            trigger_lens_search
+            trigger_lens_search,
+            start_google_auth,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

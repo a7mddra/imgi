@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import styles from "../../layouts/AuthLayout.module.css";
 
 interface LoginScreenProps {
@@ -8,10 +10,29 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleClick = () => {
+  // Listen for the "auth-success" event from Rust
+  useEffect(() => {
+    const unlistenPromise = listen('auth-success', (event) => {
+        // Auth successful!
+        // We can reload or just call onComplete. 
+        // Reloading is safer to ensure all hooks (useSystemSync) pick up the new profile.json
+        window.location.reload();
+    });
+    
+    return () => { unlistenPromise.then(f => f()); };
+  }, []);
+
+  const handleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    setTimeout(() => onComplete(), 3000);
+    
+    try {
+        await invoke("start_google_auth");
+        // Rust opens the browser. We just wait for the event now.
+    } catch (e) {
+        console.error("Auth failed to start", e);
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -33,7 +54,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onComplete }) => {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
           )}
-          <span>Continue with Google</span>
+          <span>{isLoading ? "Check your browser..." : "Continue with Google"}</span>
           <div className={styles.btnBorder}></div>
         </button>
       </div>
