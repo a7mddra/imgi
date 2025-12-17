@@ -36,15 +36,45 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     window.addEventListener("resize", checkOverflow);
     return () => window.removeEventListener("resize", checkOverflow);
   }, [userEmail]);
-
+  const renderAvatar = () => {
+    if (
+      avatarSrc &&
+      !avatarSrc.includes("googleusercontent.com/profile/picture/0")
+    ) {
+      return (
+        <img className={styles["avatar"]} src={avatarSrc} alt={userName} />
+      );
+    }
+    // Fallback: Initials
+    const initial = userName ? userName.charAt(0).toUpperCase() : "?";
+    return (
+      <div
+        className={styles["avatar"]}
+        style={{
+          backgroundColor: "#4285F4",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "24px",
+          color: "white",
+          fontWeight: "bold",
+        }}
+      >
+        {initial}
+      </div>
+    );
+  };
   return (
     <div className={styles["user-info"]}>
       <div className={styles["user-info-main"]}>
-        <img className={styles["avatar"]} src={avatarSrc} alt="User avatar" />
+        {renderAvatar()}
         <div className={styles["user-details-wrapper"]}>
           <div className={styles["user-details"]}>
             <h3>{userName}</h3>
-            <p ref={emailRef} className={isEmailOverflowing ? styles["marquee"] : ""}>
+            <p
+              ref={emailRef}
+              className={isEmailOverflowing ? styles["marquee"] : ""}
+            >
               {isEmailOverflowing ? (
                 <span>
                   {new Array(200).fill(userEmail).join("\u00A0\u00A0\u00A0")}

@@ -29,6 +29,11 @@ export const AppLayout: React.FC = () => {
   // Pass the memoized function
   const system = useSystemSync(handleToggleSettings);
   const auth = useAuth(); 
+  const performLogout = async () => {
+      await system.handleLogout(); // 1. Delete file & clear user data
+      auth.logout();               // 2. Switch UI to Login Screen
+      setIsPanelActive(false);     // 3. Close settings panel
+  };
   useUpdateCheck();
 
   // Listen for CLI image path on startup
@@ -245,8 +250,8 @@ export const AppLayout: React.FC = () => {
                 chatEngine.handleRetrySend();
             }
         }}
+        onLogout={performLogout}
         onSave={system.saveSettings}
-        onLogout={system.handleLogout}
         onToggleTheme={system.handleToggleTheme}
         onCheckSettings={() => {
             setIsPanelActive(true);

@@ -436,10 +436,6 @@ fn get_user_data(app: AppHandle) -> serde_json::Value {
     })
 }
 #[tauri::command]
-fn get_session_path() -> Option<String> {
-    None
-}
-#[tauri::command]
 fn save_prompt(_prompt: String) {}
 #[tauri::command]
 fn save_model(_model: String) {}
@@ -453,8 +449,6 @@ fn reset_prompt() -> String {
 fn reset_model() -> String {
     "gemini-2.5-flash".to_string()
 }
-#[tauri::command]
-fn logout() {}
 #[tauri::command]
 fn trigger_lens_search() {}
 
@@ -474,7 +468,18 @@ async fn start_google_auth(app: AppHandle) -> Result<(), String> {
     .await
     .map_err(|e| e.to_string())?
 }
-
+// FIX: Async logout to delete profile without freezing UI
+#[tauri::command]
+async fn logout(app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let config_dir = get_app_config_dir(&app);
+        // Delete only the profile, keep the API keys (Gemini/ImgBB)
+        let _ = fs::remove_file(config_dir.join("profile.json")).ok();
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 // ============================================================================
 // ENTRY POINT
 // ============================================================================
@@ -509,7 +514,6 @@ pub fn run() {
             get_prompt,
             get_model,
             get_user_data,
-            get_session_path,
             save_prompt,
             save_model,
             set_theme,

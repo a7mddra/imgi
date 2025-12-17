@@ -40,6 +40,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     mimeType: string;
   } | null>(null);
   
+  const [sessionLensUrl, setSessionLensUrl] = useState<string | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
   const clearSystemError = () => setSystemError(null);
 
@@ -149,8 +150,19 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     toggleTheme();
   };
 
-  const handleLogout = () => {
-    invoke("logout");
+  const handleLogout = async () => {
+    try {
+        await invoke("logout");
+        // Clear User Data Only
+        setUserName("");
+        setUserEmail("");
+        setAvatarSrc("");
+        
+        // CRITICAL: We do NOT clear startupImage or sessionLensUrl here.
+        // This preserves the session for the next user.
+    } catch (e) {
+        console.error("Logout failed", e);
+    }
   };
 
 // ... inside useSystemSync hook
@@ -196,6 +208,8 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     handleLogout,
     handleResetAPIKey,
     hasAgreed,
-    setHasAgreed
+    setHasAgreed,
+    sessionLensUrl, 
+    setSessionLensUrl 
   };
 };

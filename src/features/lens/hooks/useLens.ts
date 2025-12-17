@@ -3,41 +3,34 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { uploadToImgBB, generateLensUrl } from "../services/lens.google";
 
-export const useLens = (startupImage: { base64: string } | null) => {
-  // UI States
+export const useLens = (
+    startupImage: { base64: string } | null,
+    cachedUrl: string | null,
+    setCachedUrl: (url: string) => void
+) => {
   const [isLensLoading, setIsLensLoading] = useState(false);
   const [waitingForKey, setWaitingForKey] = useState(false);
   
-  // The Cached URL (The "Killer Idea")
-  const [cachedLensUrl, setCachedLensUrl] = useState<string | null>(null);
-
   const imageRef = useRef(startupImage);
   useEffect(() => { imageRef.current = startupImage; }, [startupImage]);
 
-  // --- Background Service: Pre-fetch URL ---
+  // --- Background Service ---
   useEffect(() => {
-    if (!startupImage) return;
+    if (!startupImage || cachedUrl) return; // Skip if already cached
 
     const prefetchLensUrl = async () => {
         try {
-            // Check for key (Now Async! No Freeze!)
-            const apiKey = await invoke<string>("get_key", { provider: "imgbb" });
-            
+            const apiKey = await invoke<string>("get_api_key", { provider: "imgbb" });
             if (apiKey) {
-                console.log("Background Service: Pre-uploading image to ImgBB...");
-                // Silent upload - no spinners, just internal state
+                console.log("Background: Uploading to ImgBB...");
                 const publicUrl = await uploadToImgBB(startupImage.base64, apiKey);
                 const url = generateLensUrl(publicUrl);
-                setCachedLensUrl(url);
-                console.log("Background Service: Lens URL Ready.");
+                setCachedUrl(url); // Save to Global Session
             }
-        } catch (e) {
-            console.warn("Background Service: Pre-fetch failed (user might need setup)", e);
-        }
+        } catch (e) { /* ignore */ }
     };
-
     prefetchLensUrl();
-  }, [startupImage]);
+  }, [startupImage, cachedUrl]); 
 
 
   // --- Action Logic ---
@@ -45,9 +38,8 @@ export const useLens = (startupImage: { base64: string } | null) => {
   const runLensSearch = async (base64: string, key: string) => {
       try {
         setIsLensLoading(true);
-        // If we have a cached URL, use it instantly!
-        if (cachedLensUrl) {
-             await invoke("open_external_url", { url: cachedLensUrl });
+        if (cachedUrl) {
+             await invoke("open_external_url", { url: cachedUrl });
              setIsLensLoading(false);
              return;
         }
@@ -57,15 +49,10 @@ export const useLens = (startupImage: { base64: string } | null) => {
         const lensUrl = generateLensUrl(publicUrl);
         
         // Cache it for next time
-        setCachedLensUrl(lensUrl);
-        
+        setCachedUrl(lensUrl); // Update Global Session
         await invoke("open_external_url", { url: lensUrl });
-      } catch (error) {
-        console.error("Lens Error:", error);
-        const msg = error instanceof Error ? error.message : "Unknown error";
-      } finally {
-        setIsLensLoading(false);
-      }
+
+      } finally { setIsLensLoading(false); }
   };
 
   // --- Setup Listener (unchanged) ---
@@ -91,8 +78,8 @@ export const useLens = (startupImage: { base64: string } | null) => {
     if (isLensLoading || waitingForKey) return;
 
     // 1. Instant Open if ready
-    if (cachedLensUrl) {
-        await invoke("open_external_url", { url: cachedLensUrl });
+    if (setCachedUrl) {
+        await invoke("open_external_url", { url: setCachedUrl });
         return;
     }
 

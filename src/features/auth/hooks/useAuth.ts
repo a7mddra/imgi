@@ -82,11 +82,16 @@ export const useAuth = () => {
     setAuthStage('AUTHENTICATED');
   };
 
+  const logout = () => {
+    setAuthStage('LOGIN');
+  };
+
   return { 
     authStage, 
     isAuthenticated: authStage === 'AUTHENTICATED',
     completeGeminiSetup,
     isWatcherActive,
-    login
+    login,
+    logout // <--- Expose this
   };
 };
