@@ -1,10 +1,10 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "spatialshot",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "spatialshot",
   "build": {
-    "beforeDevCommand": "npm run vite", 
+    "beforeDevCommand": "npm run vite",
     "devUrl": "http://localhost:3456",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"

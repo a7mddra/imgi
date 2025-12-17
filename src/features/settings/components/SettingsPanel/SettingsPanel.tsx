@@ -12,17 +12,12 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
-import styles from "./SettingsPanel.module.css";
-import { GITHUB, MAILTO } from "../../types/settings.types";
+import { GITHUB, MAILTO } from "../..";
 import { MODELS, ModelType } from "../../../../lib/config/models";
 import { DEFAULT_MODEL, DEFAULT_PROMPT } from "../../../../lib/utils/constants";
-import { Dialog } from "../../../../components/ui/Dialogs/Dialog";
-import { showToast } from "../../../../components/ui/Notifications/Toast";
-
-// Sub-components
-import { UserInfo } from "../UserProfile/UserProfile";
-import { MainActions } from "./ActionsSheet";
-import { PersonalContext } from "../Personalization/Personalization";
+import { Dialog, showToast } from "../../../../components/ui";
+import { UserInfo, MainActions, PersonalContext } from "../..";
+import styles from "./SettingsPanel.module.css";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -188,10 +183,8 @@ export const SettingsPanel = forwardRef<
       }
     };
 
-    // --- Render with Portal to fix Z-Index issues ---
     return createPortal(
       <>
-        {/* Overlay to catch clicks outside and close safely */}
         <div
           className={styles["settings-overlay"]}
           onClick={(e) => {
@@ -203,9 +196,11 @@ export const SettingsPanel = forwardRef<
         />
 
         <div
-          className={`${styles["settings-panel"]} ${isOpen ? styles["active"] : ""} ${
-            isClosing ? styles["closing"] : ""
-          } ${isSubviewActive ? styles["subview-active"] : ""}`}
+          className={`${styles["settings-panel"]} ${
+            isOpen ? styles["active"] : ""
+          } ${isClosing ? styles["closing"] : ""} ${
+            isSubviewActive ? styles["subview-active"] : ""
+          }`}
           id="panel"
         >
           <div className={styles["panel-content"]} id="settings-content">
@@ -257,7 +252,7 @@ export const SettingsPanel = forwardRef<
               isRotating={isRotating}
             />
           </div>
-          
+
           <div className={styles["footer"]}>
             <p>Spatialshot &copy; 2025</p>
           </div>

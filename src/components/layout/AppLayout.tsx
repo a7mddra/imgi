@@ -1,4 +1,8 @@
-// FILE: src/components/layout/AppLayout.tsx
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import React, { useState, useEffect, useCallback } from "react";
 import "katex/dist/katex.min.css";
@@ -10,7 +14,7 @@ import { Agreement } from "../../features/onboarding/components/Agreement/Agreem
 import { UpdateNotes } from "../../features/onboarding/components/UpdateNotes/UpdateNotes";
 import { GeminiSetup } from "../../features/auth/components/BYOKey/GeminiSetup";
 import { LoginScreen } from "../../features/auth/components/LoginScreen/LoginScreen";
-import { useAuth } from "../../features/auth/hooks/useAuth"; 
+import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
@@ -21,30 +25,25 @@ import { invoke } from "@tauri-apps/api/core";
 
 export const AppLayout: React.FC = () => {
   const [isPanelActive, setIsPanelActive] = useState(false);
-
-  // FIX: Memoize the toggle function to prevent infinite loop in useSystemSync
   const handleToggleSettings = useCallback(() => {
     setIsPanelActive((prev) => !prev);
   }, []);
 
-  // Pass the memoized function
   const system = useSystemSync(handleToggleSettings);
-  const auth = useAuth(); 
+  const auth = useAuth();
   const performLogout = async () => {
-      await system.handleLogout(); // 1. Delete file & clear user data
-      auth.logout();               // 2. Switch UI to Login Screen
-      setIsPanelActive(false);     // 3. Close settings panel
+    await system.handleLogout();
+    auth.logout();
+    setIsPanelActive(false);
   };
   useUpdateCheck();
 
   const [isCheckingImage, setIsCheckingImage] = useState(true);
 
-  // Listen for CLI image path on startup
   useEffect(() => {
     const initStartupImage = async () => {
       try {
-        // 1. Check if Rust already loaded an image from CLI args during setup
-        const initialImage = await invoke<string | null>('get_initial_image');
+        const initialImage = await invoke<string | null>("get_initial_image");
         if (initialImage) {
           console.log("Found CLI image in state, loading...");
           handleImageReady(initialImage);
@@ -56,93 +55,88 @@ export const AppLayout: React.FC = () => {
       }
     };
 
-    // Run immediate check
     initStartupImage();
 
-    // 2. Keep the listener for runtime file associations (e.g. "Open With" while app is running)
-    const unlisten = listen<string>('image-path', async (event) => {
+    const unlisten = listen<string>("image-path", async (event) => {
       const imagePath = event.payload;
       if (imagePath) {
         try {
           console.log("Event received for image:", imagePath);
-          const base64 = await invoke<string>('process_image_path', { path: imagePath });
+          const base64 = await invoke<string>("process_image_path", {
+            path: imagePath,
+          });
           handleImageReady(base64);
         } catch (error) {
           console.error("Failed to process CLI image event:", error);
         }
       }
     });
-   
+
     return () => {
-      unlisten.then(f => f());
+      unlisten.then((f) => f());
     };
   }, []);
 
   const isAgreementPending = system.hasAgreed === false;
-  const isLoadingState = system.hasAgreed === null || auth.authStage === 'LOADING' || isCheckingImage;
+  const isLoadingState =
+    system.hasAgreed === null ||
+    auth.authStage === "LOADING" ||
+    isCheckingImage;
   const isImageMissing = !system.startupImage;
-  const isAuthPending = auth.authStage === 'GEMINI_SETUP' || auth.authStage === 'LOGIN';
+  const isAuthPending =
+    auth.authStage === "GEMINI_SETUP" || auth.authStage === "LOGIN";
+  const isChatActive =
+    !isLoadingState && !isAgreementPending && !isImageMissing && !isAuthPending;
 
-  // 2. Determine if Chat should be active
-  const isChatActive = !isLoadingState && !isAgreementPending && !isImageMissing && !isAuthPending;
-
-  // 2. Chat Engine
   const chatEngine = useChatEngine({
     apiKey: system.apiKey,
     currentModel: system.sessionModel,
     startupImage: system.startupImage,
     prompt: system.prompt,
     setCurrentModel: system.setSessionModel,
-    enabled: isChatActive, // <--- ONLY RUN WHEN UI IS READY
+    enabled: isChatActive,
   });
 
-
-  // 3. Local Layout State
   const [input, setInput] = useState("");
-  
-  // Initialize update state based on storage
   const [pendingUpdate] = useState(() => getPendingUpdate());
   const [showUpdate, setShowUpdate] = useState(() => {
-     // FIX: Don't show if we just reloaded for Auth reasons
-     const wasDismissed = sessionStorage.getItem('update_dismissed');
-     return !!pendingUpdate && !wasDismissed;
+    const wasDismissed = sessionStorage.getItem("update_dismissed");
+    return !!pendingUpdate && !wasDismissed;
   });
 
-  // --- GEM ACTIVATION: Auto-Resize ---
-  // We pass the raw flags so the hook can decide "Onboarding" vs "Chat"
   useWindowManager(
     isChatActive,
     isAuthPending,
     isAgreementPending,
-    showUpdate, // Treat update screen as a "Onboarding" page
-    isLoadingState // <--- NEW: Pass loading state
+    showUpdate,
+    isLoadingState
   );
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    selectedText: string;
+  } | null>(null);
 
-  // FIX: Listener must be at top level to be active during Login Screen
   useEffect(() => {
-    const unlisten = listen<any>('auth-success', (event) => {
-        // 1. Update User Data UI immediately (No File Read needed!)
-        system.updateUserData(event.payload);
-        // 2. Switch to Chat UI (No Reload!)
-        auth.login(); 
+    const unlisten = listen<any>("auth-success", (event) => {
+      system.updateUserData(event.payload);
+      auth.login();
     });
-    return () => { unlisten.then(f => f()); };
+    return () => {
+      unlisten.then((f) => f());
+    };
   }, []);
 
-  // --- Handlers ---
-  
   const handleImageReady = (base64Full: string) => {
-    // Basic validation to ensure we have a valid data URL
-    if (!base64Full || !base64Full.includes(',')) return;
+    if (!base64Full || !base64Full.includes(",")) return;
 
-    const [header, base64Data] = base64Full.split(',');
-    const mimeType = header.replace('data:', '').replace(';base64', '');
-    
+    const [header, base64Data] = base64Full.split(",");
+    const mimeType = header.replace("data:", "").replace(";base64", "");
+
     system.setStartupImage({
-        base64: base64Full, 
-        mimeType: mimeType
+      base64: base64Full,
+      mimeType: mimeType,
     });
   };
 
@@ -162,32 +156,31 @@ export const AppLayout: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleClick = () => { if (contextMenu) handleCloseContextMenu(); };
+    const handleClick = () => {
+      if (contextMenu) handleCloseContextMenu();
+    };
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [contextMenu]);
 
-  // --- Render Logic ---
-
   if (showUpdate && pendingUpdate) {
     return (
       <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
-        <UpdateNotes 
+        <UpdateNotes
           version={pendingUpdate.version}
           notes={pendingUpdate.notes}
           onClose={() => {
             setShowUpdate(false);
-            // FIX: Remember dismissal for this session
-            sessionStorage.setItem('update_dismissed', 'true');
-          }} 
+            sessionStorage.setItem("update_dismissed", "true");
+          }}
         />
       </div>
     );
   }
 
   // 1. Loading State (Checking file)
-  if (system.hasAgreed === null || auth.authStage === 'LOADING') {
-      return <div className="h-screen w-screen bg-neutral-950" />;
+  if (system.hasAgreed === null || auth.authStage === "LOADING") {
+    return <div className="h-screen w-screen bg-neutral-950" />;
   }
 
   // 2. Agreement Screen
@@ -201,10 +194,10 @@ export const AppLayout: React.FC = () => {
 
     return (
       <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
-        <Agreement 
-          osType={getOSType()} 
-          onNext={() => system.setHasAgreed(true)} 
-          onCancel={() => exit(0)} 
+        <Agreement
+          osType={getOSType()}
+          onNext={() => system.setHasAgreed(true)}
+          onCancel={() => exit(0)}
         />
       </div>
     );
@@ -212,20 +205,20 @@ export const AppLayout: React.FC = () => {
 
   // 3. Welcome / Image Upload
   if (!system.startupImage) {
-     return (
-        <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
-           <Welcome onImageReady={handleImageReady} />
-        </div>
-     );
+    return (
+      <div className="h-screen w-screen bg-neutral-950 text-neutral-100">
+        <Welcome onImageReady={handleImageReady} />
+      </div>
+    );
   }
 
-  // 2. Gemini Setup (SECOND - Forced if not done)
-  if (auth.authStage === 'GEMINI_SETUP') {
+  // 2. Gemini Setup
+  if (auth.authStage === "GEMINI_SETUP") {
     return <GeminiSetup onComplete={auth.completeGeminiSetup} />;
   }
 
-  // 3. Login Screen (THIRD)
-  if (auth.authStage === 'LOGIN') {
+  // 3. Login Screen
+  if (auth.authStage === "LOGIN") {
     return <LoginScreen onComplete={auth.login} />;
   }
 
@@ -244,55 +237,51 @@ export const AppLayout: React.FC = () => {
         isStreaming={chatEngine.isStreaming}
         error={chatEngine.error || system.systemError}
         lastSentMessage={chatEngine.lastSentMessage}
-        
         // Inputs
         input={input}
         onInputChange={setInput}
-        
         // Models & Settings
         currentModel={system.sessionModel}
         editingModel={system.editingModel}
         startupImage={system.startupImage}
         prompt={system.prompt}
         setPrompt={system.setEditingPrompt}
-        
         // User Info
         userName={system.userName}
         userEmail={system.userEmail}
         avatarSrc={system.avatarSrc}
         isDarkMode={system.isDarkMode}
-        
         // Actions
         onSend={() => {
-            chatEngine.handleSend(input);
-            setInput("");
+          chatEngine.handleSend(input);
+          setInput("");
         }}
         onModelChange={system.setSessionModel}
         onEditingModelChange={system.setEditingModel}
         onRetry={() => {
-            if (chatEngine.messages.length === 0) {
-                chatEngine.handleReload();
-            } else {
-                chatEngine.handleRetrySend();
-            }
+          if (chatEngine.messages.length === 0) {
+            chatEngine.handleReload();
+          } else {
+            chatEngine.handleRetrySend();
+          }
         }}
         onLogout={performLogout}
         onSave={system.saveSettings}
         onToggleTheme={system.handleToggleTheme}
         onCheckSettings={() => {
-            setIsPanelActive(true);
-            chatEngine.clearError();
+          setIsPanelActive(true);
+          chatEngine.clearError();
         }}
         toggleSettingsPanel={() => setIsPanelActive(!isPanelActive)}
         isPanelActive={isPanelActive}
         onResetAPIKey={system.handleResetAPIKey}
-        onReload={chatEngine.handleReload} 
-                sessionLensUrl={system.sessionLensUrl}
+        onReload={chatEngine.handleReload}
+        sessionLensUrl={system.sessionLensUrl}
         setSessionLensUrl={system.setSessionLensUrl}
       />
-      
+
       <div id="toast" className="toast"></div>
-      
+
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}

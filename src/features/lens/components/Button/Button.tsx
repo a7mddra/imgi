@@ -6,26 +6,26 @@
 
 import React from "react";
 import styles from "./Button.module.css";
-import { useLens } from "../../hooks/useLens";
+import { useLens } from "../..";
 
 interface LensButtonProps {
   isChatMode: boolean;
   startupImage: { base64: string } | null;
-  // NEW PROPS
   cachedUrl: string | null;
   setCachedUrl: (url: string) => void;
 }
 
-
-const LensButton: React.FC<LensButtonProps> = ({ 
-  isChatMode, 
+export const LensButton: React.FC<LensButtonProps> = ({
+  isChatMode,
   startupImage,
-  cachedUrl,     // <--- Receive
-  setCachedUrl   // <--- Receive
+  cachedUrl,
+  setCachedUrl,
 }) => {
-  // The hook handles the logic: 
-  // 1. Check Key -> 2. Open Window OR Upload -> 3. Open Browser
-    const { isLensLoading, triggerLens } = useLens(startupImage, cachedUrl, setCachedUrl);
+  const { isLensLoading, triggerLens } = useLens(
+    startupImage,
+    cachedUrl,
+    setCachedUrl
+  );
 
   return (
     <button

@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export function showToast(
-  message: string,
-  type: "success" | "done" | "error"
-) {
+export function showToast(message: string, type: "success" | "done" | "error") {
   const toast = document.getElementById("toast");
   if (!toast) return;
 

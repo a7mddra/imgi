@@ -28,12 +28,19 @@ export const MainActions: React.FC<MainActionsProps> = ({
 }) => {
   return (
     <div className={styles["button-group"]}>
-      <button className={styles["btn"]} id="darkModeBtn" onClick={onToggleTheme}>
+      <button
+        className={styles["btn"]}
+        id="darkModeBtn"
+        onClick={onToggleTheme}
+      >
         <div className={styles["btn-content"]}>
           <i className="fas fa-moon" />
           <div className={styles["btn-text"]}>Dark Mode</div>
         </div>
-        <label className={styles["toggle"]} onClick={(e) => e.stopPropagation()}>
+        <label
+          className={styles["toggle"]}
+          onClick={(e) => e.stopPropagation()}
+        >
           <input
             type="checkbox"
             id="darkModeToggle"
@@ -44,7 +51,11 @@ export const MainActions: React.FC<MainActionsProps> = ({
         </label>
       </button>
 
-      <button className={styles["btn"]} id="clearCacheBtn" onClick={onClearCache}>
+      <button
+        className={styles["btn"]}
+        id="clearCacheBtn"
+        onClick={onClearCache}
+      >
         <div className={styles["btn-content"]}>
           <i className="fas fa-broom" />
           <div className={styles["btn-text"]}>Clear Cache</div>
@@ -58,7 +69,11 @@ export const MainActions: React.FC<MainActionsProps> = ({
         </div>
       </button>
 
-      <button className={styles["btn"]} id="resetAPIKeyBtn" onClick={onResetAPIKey}>
+      <button
+        className={styles["btn"]}
+        id="resetAPIKeyBtn"
+        onClick={onResetAPIKey}
+      >
         <div className={styles["btn-content"]}>
           <i className="fas fa-key" />
           <div className={styles["btn-text"]}>Reset API Key</div>

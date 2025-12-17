@@ -1,9 +1,12 @@
-@import '../../../../styles/variables.css';
-@import '../../../../styles/animations.css';
-
-/* * We use @property for the rotating border gradient.
- * Ensure your browser support target includes Houdini API or this will fallback.
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
  */
+
+@import "../../../../styles/variables.css";
+@import "../../../../styles/animations.css";
+
 @property --angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -13,7 +16,7 @@
 .lensBtn {
   position: relative;
   background: transparent;
-  color: var(--light, #ffffff); /* Fallback added */
+  color: var(--light, #ffffff);
   font-size: 16px;
   font-weight: 500;
   padding: 16px 32px;
@@ -35,7 +38,6 @@
   flex-shrink: 0;
 }
 
-/* Spinner Animation */
 .spinner {
   animation: rotate 1s linear infinite;
   display: block;
@@ -53,14 +55,11 @@
 .reelStrip {
   display: flex;
   flex-direction: column;
-  /* Assuming scrollUp is defined in animations.css globally */
   animation: scrollUp 16s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
   width: 100%;
 }
 
-/* Chat Mode Modifier */
 .lensBtn.chatMode .reelStrip {
-  /* Assuming scrollUpToLens is defined in animations.css */
   animation: scrollUpToLens 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
@@ -95,14 +94,12 @@
   z-index: -1;
 }
 
-/* Hide border in chat mode */
 .lensBtn.chatMode .btnBorder {
   animation: none;
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }
 
-/* Hover Effect */
 .lensBtn::before {
   content: "";
   position: absolute;
@@ -113,7 +110,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    var(--lens-hover-bg, rgba(255,255,255,0.1)),
+    var(--lens-hover-bg, rgba(255, 255, 255, 0.1)),
     transparent
   );
   transition: left 0.6s ease;

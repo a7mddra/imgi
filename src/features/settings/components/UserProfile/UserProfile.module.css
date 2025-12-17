@@ -1,4 +1,10 @@
-@import '../../../../styles/animations.css';
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+@import "../../../../styles/animations.css";
 
 .user-info {
   display: flex;
@@ -77,7 +83,6 @@
   display: inline-block;
   animation: marquee-continuous 1800s linear infinite;
 }
-
 
 .logout-btn {
   background: transparent;

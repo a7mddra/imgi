@@ -1,69 +1,73 @@
-import React, { useState, useRef, DragEvent, ChangeEvent, ClipboardEvent } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import styles from './Welcome.module.css';
+import React, {
+  useState,
+  useRef,
+  DragEvent,
+  ChangeEvent,
+  ClipboardEvent,
+} from "react";
+import { invoke } from "@tauri-apps/api/core";
+import styles from "./Welcome.module.css";
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
 interface WelcomeProps {
   onImageReady: (base64: string) => void;
 }
 
-// CHANGED: "export default function" -> "export const Welcome: React.FC<...>"
 export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- Handlers ---
 
   const processFiles = async (files: FileList) => {
     const file = files[0];
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      console.warn('Invalid file type:', file.type);
+      console.warn("Invalid file type:", file.type);
       return;
     }
     if (file.size > MAX_SIZE) {
-      console.warn('File too large');
+      console.warn("File too large");
       return;
     }
 
     try {
-        let resultBase64 = "";
-        
-        // @ts-ignore - Check for path (Tauri specific)
-        if (file.path) {
-             // @ts-ignore
-             resultBase64 = await invoke('process_image_path', { path: file.path });
-        } else {
-            const buffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(buffer);
-            resultBase64 = await invoke('process_image_bytes', { bytes: Array.from(bytes) });
-        }
-        
-        // Success! Notify parent to switch screens
-        onImageReady(resultBase64);
-        
+      let resultBase64 = "";
+
+      // @ts-ignore - Check for path (Tauri specific)
+      if (file.path) {
+        // @ts-ignore
+        resultBase64 = await invoke("process_image_path", { path: file.path });
+      } else {
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        resultBase64 = await invoke("process_image_bytes", {
+          bytes: Array.from(bytes),
+        });
+      }
+
+      onImageReady(resultBase64);
     } catch (error) {
-        console.error("Failed to process file", error);
+      console.error("Failed to process file", error);
     }
   };
 
-  // --- Event Listeners ---
-
   const handleDragEnter = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
   };
 
   const handleDragLeave = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
   };
 
   const handleDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
     if (e.dataTransfer.files?.length > 0) processFiles(e.dataTransfer.files);
   };
@@ -85,28 +89,24 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
   const triggerFileInput = () => fileInputRef.current?.click();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       triggerFileInput();
     }
   };
 
   return (
-    <div 
-      className={styles.container} 
-      onPaste={handlePaste} 
-      tabIndex={-1} 
-    >
+    <div className={styles.container} onPaste={handlePaste} tabIndex={-1}>
       <input
         ref={fileInputRef}
         className={styles.fileInput}
         type="file"
-        accept={ALLOWED_TYPES.join(',')}
+        accept={ALLOWED_TYPES.join(",")}
         onChange={handleFileInputChange}
       />
 
       <section
-        className={`${styles.uploadArea} ${isDragging ? styles.dragging : ''}`}
+        className={`${styles.uploadArea} ${isDragging ? styles.dragging : ""}`}
         tabIndex={0}
         role="button"
         onClick={triggerFileInput}
@@ -116,7 +116,11 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <svg className={styles.uploadSvg} viewBox="0 0 24 24" aria-hidden="true">
+        <svg
+          className={styles.uploadSvg}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
           <path d="M21 16v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2"></path>
           <polyline points="7 11 12 6 17 11"></polyline>
           <line x1="12" y1="6" x2="12" y2="18"></line>
@@ -134,7 +138,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
         <div className={styles.panelBody}>
           Files are processed immediately. There is no preview.
         </div>
-        <div style={{ height: '8px' }}></div>
+        <div style={{ height: "8px" }}></div>
         <div className={styles.panelTitle}>Accessibility</div>
         <div className={styles.panelBody}>
           You can tab to the upload area and press Enter to open the file
@@ -142,9 +146,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
         </div>
 
         <div className={styles.footer} aria-hidden="true">
-          <p className={styles.footerText}>
-            Spatialshot &copy; 2025
-          </p>
+          <p className={styles.footerText}>Spatialshot &copy; 2025</p>
         </div>
       </aside>
     </div>

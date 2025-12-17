@@ -59,7 +59,7 @@ const cleanBase64 = (data: string) => {
 
 export const startNewChatStream = async (
   modelId: string,
-  imageBase64: string, // This has the header
+  imageBase64: string,
   mimeType: string,
   systemPrompt: string,
   onToken: (token: string) => void
@@ -69,7 +69,7 @@ export const startNewChatStream = async (
   chatSession = ai.chats.create({
     model: modelId,
     config: {
-      systemInstruction: systemPrompt, // Moved prompt to system instruction for cleaner history
+      systemInstruction: systemPrompt,
     },
   });
 
@@ -77,7 +77,7 @@ export const startNewChatStream = async (
     {
       inlineData: {
         mimeType,
-        data: cleanBase64(imageBase64), // <--- FIX: Clean it here
+        data: cleanBase64(imageBase64),
       },
     },
     {

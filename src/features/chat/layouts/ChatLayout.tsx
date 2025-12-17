@@ -4,22 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { Message, ChatHeader, ChatArea, ChatInput } from "..";
 import "katex/dist/katex.min.css";
-
-import { Message } from "../types/chat.types";
-import { ChatHeader } from "../components/ChatHeader/ChatHeader";
-import { ChatArea } from "../components/ChatArea/ChatArea";
-import { ChatInput } from "../components/ChatInput/ChatInput";
 import "./ChatLayout.module.css";
 
 export interface ChatLayoutProps {
-  // States from engine
   messages: Message[];
   streamingText: string;
   isChatMode: boolean;
@@ -28,12 +18,10 @@ export interface ChatLayoutProps {
   error: string | null;
   lastSentMessage: Message | null;
 
-  // States from App
   input: string;
   currentModel: string;
   editingModel: string;
 
-  // System-related states
   startupImage: { base64: string; mimeType: string } | null;
   prompt: string;
   userName: string;
@@ -41,7 +29,6 @@ export interface ChatLayoutProps {
   avatarSrc: string;
   isDarkMode: boolean;
 
-  // Handlers
   onSend: () => void;
   onModelChange: (model: string) => void;
   onEditingModelChange: (model: string) => void;
@@ -56,7 +43,7 @@ export interface ChatLayoutProps {
   isPanelActive: boolean;
   onResetAPIKey: () => void;
   onReload?: () => void;
-    sessionLensUrl: string | null;
+  sessionLensUrl: string | null;
   setSessionLensUrl: (url: string) => void;
 }
 
@@ -90,11 +77,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   isPanelActive,
   onResetAPIKey,
   onReload,
-    sessionLensUrl,    // <--- Receive
-  setSessionLensUrl, 
+  sessionLensUrl,
+  setSessionLensUrl,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const settingsPanelRef = useRef<{ handleClose: () => Promise<boolean> }>(null);
+  const settingsPanelRef = useRef<{ handleClose: () => Promise<boolean> }>(
+    null
+  );
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -104,8 +93,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   const [isPanelActiveAndVisible, setIsPanelActiveAndVisible] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
-
-  // --- Effects ---
 
   useEffect(() => {
     if (!isLoading) {
@@ -121,7 +108,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   }, [messages.length, isStreaming]);
 
-  // Panel Animation Logic
   useEffect(() => {
     if (isPanelActive) {
       setIsPanelVisible(true);
@@ -140,7 +126,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
     }
   }, [isPanelActive]);
 
-  // Close Panel Logic
   const closeSettingsPanel = async () => {
     if (isPanelActive) {
       if (settingsPanelRef.current) {
@@ -159,8 +144,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
 
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
-      const isMsgBoxClick = target.closest(".error-overlay") || target.closest(".error-container");
+
+      const isMsgBoxClick =
+        target.closest(".error-overlay") || target.closest(".error-container");
       const isContextMenuClick = target.closest("#app-context-menu");
 
       if (
@@ -184,8 +170,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
     };
   }, [isPanelActive, isSubviewActive]);
 
-  // Context Menu Logic
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    selectedText: string;
+  } | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -203,7 +192,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   };
 
   useEffect(() => {
-    const handleClick = () => { if (contextMenu) handleCloseContextMenu(); };
+    const handleClick = () => {
+      if (contextMenu) handleCloseContextMenu();
+    };
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [contextMenu]);
@@ -249,8 +240,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         isLoading={isLoading}
         isChatMode={isChatMode}
         startupImage={startupImage}
-        cachedUrl={sessionLensUrl}        // <--- Pass Down
-        setCachedUrl={setSessionLensUrl}  
+        cachedUrl={sessionLensUrl}
+        setCachedUrl={setSessionLensUrl}
       />
 
       <ChatArea
@@ -275,7 +266,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         onSend={onSend}
         isLoading={isLoading}
       />
-
     </div>
   );
 };

@@ -37,34 +37,52 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
   isRotating,
 }) => {
   return (
-    <div className={`${styles["subview"]} ${isActive ? styles["active"] : ""}`} id="promptView">
+    <div
+      className={`${styles["subview"]} ${isActive ? styles["active"] : ""}`}
+      id="promptView"
+    >
       <div className={styles["subview-header"]}>
-        <button className={styles["back-btn"]} id="backPromptBtn" onClick={onBack}>
+        <button
+          className={styles["back-btn"]}
+          id="backPromptBtn"
+          onClick={onBack}
+        >
           <i className="fas fa-chevron-left" />
         </button>
-        <button className={styles["reset-btn"]} id="resetPromptBtn" onClick={onReset}>
+        <button
+          className={styles["reset-btn"]}
+          id="resetPromptBtn"
+          onClick={onReset}
+        >
           Reset{" "}
-          <i className={`fas fa-sync-alt ${isRotating ? styles["rotating"] : ""}`} />
+          <i
+            className={`fas fa-sync-alt ${
+              isRotating ? styles["rotating"] : ""
+            }`}
+          />
         </button>
       </div>
       <div className={styles["subview-content"]}>
         <label htmlFor="promptTextarea">Customize Prompt</label>
         <div className={styles["prompt-container"]}>
           <textarea
-          className={styles["prompt-textarea"]}
-          id="promptTextarea"
-          placeholder="Write a prompt..."
-          value={localPrompt}
-          onChange={(e) => {
-            setLocalPrompt(e.target.value);
-          }}
-        /> </div>
+            className={styles["prompt-textarea"]}
+            id="promptTextarea"
+            placeholder="Write a prompt..."
+            value={localPrompt}
+            onChange={(e) => {
+              setLocalPrompt(e.target.value);
+            }}
+          />{" "}
+        </div>
 
         <div className={styles["form-group"]}>
           <label>Default Model</label>
           <div className={styles["model-switcher"]}>
             <div className={styles["model-info"]}>
-              <span className={styles["model-name"]}>{selectedModel?.name}</span>
+              <span className={styles["model-name"]}>
+                {selectedModel?.name}
+              </span>
               <span className={styles["model-description"]}>
                 {selectedModel?.description}
               </span>

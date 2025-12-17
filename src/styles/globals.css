@@ -1,3 +1,9 @@
+/**
+ * @license
+ * copyright 2025 a7mddra
+ * spdx-license-identifier: apache-2.0
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,14 +54,13 @@ body {
 body {
   color: #e5e5e5;
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
-  overflow: hidden; /* Prevent body scroll, let app container handle it */
+  overflow: hidden;
 }
 
 body.light-mode {
   color: #333333;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -73,17 +78,4 @@ body.light-mode {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--neutral-700);
-}
-
-.token {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(6px);
-  white-space: pre-wrap;
-}
-
-.token.show {
-  opacity: 1;
-  transform: translateY(0);
-  transition: all 140ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }

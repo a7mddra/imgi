@@ -1,5 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
-@import '../../../styles/animations.css';
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap");
+@import "../../../styles/animations.css";
 
 .viewContainer {
   width: 100vw;
@@ -8,56 +14,48 @@
   color: #000000;
   display: flex;
   flex-direction: column;
-  /* Font Setup */
-  font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
-  position: relative; /* Needed for absolute positioning context */
+  position: relative;
 }
 
-/* THE CONTROLLER */
 .container {
   max-width: 520px;
   width: 100%;
   text-align: left;
-  
-  /* POSITIONING MAGIC */
-  /* 1. Stop centering it */
-  margin: 0; 
-  
-  /* 2. Push to the bottom */
+
+  margin: 0;
+
   position: absolute;
   bottom: 0;
   left: 0;
-  
-  /* 3. CONTROL KNOBS (Adjust these to move the group) */
-  padding-left: 100px;  /* Moves group to the RIGHT (away from left edge) */
-  padding-bottom: 180px; /* Moves group UP (away from bottom edge) */
-  
+
+  padding-left: 100px;
+  padding-bottom: 180px;
+
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-/* Specific offsets for each screen (matches your vanilla pixel values) */
-/* These extend the base .container class */
 .containerGemini {
-  padding-bottom: 240px; /* Specific bottom position for Gemini */
+  padding-bottom: 240px;
 }
 
 .containerLogin {
-  padding-bottom: 300px; /* Specific bottom position for Login */
+  padding-bottom: 300px;
 }
 
 .containerImgbb {
-  padding-bottom: 20vh; /* Specific bottom position for ImgBB */
+  padding-bottom: 20vh;
 }
 
 .containerImgbb {
-  padding-left: 70px; /* Specific bottom position for ImgBB */
+  padding-left: 70px;
 }
 
-/* ... Keep the rest (Typography, Buttons, Spinner) exactly as before ... */
 .h1 {
   font-size: 28px;
   margin-bottom: 5px;
@@ -92,7 +90,6 @@
   text-align: center;
 }
 
-/* ... Button CSS from previous message ... */
 @property --angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -172,7 +169,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(100, 100, 100, 0.4), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(100, 100, 100, 0.4),
+    transparent
+  );
   transition: left 0.6s ease;
   z-index: -1;
 }

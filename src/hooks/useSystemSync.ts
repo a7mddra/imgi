@@ -10,15 +10,22 @@ import { listen } from "@tauri-apps/api/event";
 import { showToast } from "../components/ui/Notifications/Toast";
 import { initializeGemini } from "../lib/api/gemini/client";
 import { useTheme } from "./useTheme";
-import { loadPreferences, savePreferences, hasPreferencesFile } from "../lib/config/preferences";
-import { DEFAULT_MODEL, DEFAULT_PROMPT, DEFAULT_THEME } from "../lib/utils/constants";
+import {
+  loadPreferences,
+  savePreferences,
+  hasPreferencesFile,
+} from "../lib/config/preferences";
+import {
+  DEFAULT_MODEL,
+  DEFAULT_PROMPT,
+  DEFAULT_THEME,
+} from "../lib/utils/constants";
 
 export const useSystemSync = (onToggleSettings: () => void) => {
   const { theme, toggleTheme, setTheme } = useTheme();
 
   const onToggleSettingsRef = useRef(onToggleSettings);
-  
-  // Update ref whenever the passed function changes
+
   useEffect(() => {
     onToggleSettingsRef.current = onToggleSettings;
   }, [onToggleSettings]);
@@ -29,8 +36,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
   const [startupModel, setStartupModel] = useState<string>(DEFAULT_MODEL);
   const [editingModel, setEditingModel] = useState<string>(DEFAULT_MODEL);
   const [sessionModel, setSessionModel] = useState<string>(DEFAULT_MODEL);
-  
-  // User Data (Still mocked or via Tauri for now if not in preferences)
+
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [avatarSrc, setAvatarSrc] = useState("");
@@ -39,40 +45,35 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     base64: string;
     mimeType: string;
   } | null>(null);
-  
+
   const [sessionLensUrl, setSessionLensUrl] = useState<string | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
   const clearSystemError = () => setSystemError(null);
 
-  // New: Agreement State
-  const [hasAgreed, setHasAgreed] = useState<boolean | null>(null); // null = loading
-
-  // Load Preferences & Agreement Status
+  const [hasAgreed, setHasAgreed] = useState<boolean | null>(null);
   useEffect(() => {
     const init = async () => {
-        // Check Agreement
-        const agreed = await hasPreferencesFile();
-        setHasAgreed(agreed);
+      const agreed = await hasPreferencesFile();
+      setHasAgreed(agreed);
 
-        if (agreed) {
-            const prefs = await loadPreferences();
-            
-            const loadedPrompt = prefs.prompt || DEFAULT_PROMPT;
-            setActivePrompt(loadedPrompt);
-            setEditingPrompt(loadedPrompt);
-            
-            const loadedModel = prefs.model || DEFAULT_MODEL;
-            setStartupModel(loadedModel);
-            setEditingModel(loadedModel);
-            setSessionModel(loadedModel);
+      if (agreed) {
+        const prefs = await loadPreferences();
 
-            if (prefs.theme) {
-                setTheme(prefs.theme);
-            }
-        } else {
-             // Fallback to defaults if no preferences file
-             setTheme(DEFAULT_THEME as "light" | "dark");
+        const loadedPrompt = prefs.prompt || DEFAULT_PROMPT;
+        setActivePrompt(loadedPrompt);
+        setEditingPrompt(loadedPrompt);
+
+        const loadedModel = prefs.model || DEFAULT_MODEL;
+        setStartupModel(loadedModel);
+        setEditingModel(loadedModel);
+        setSessionModel(loadedModel);
+
+        if (prefs.theme) {
+          setTheme(prefs.theme);
         }
+      } else {
+        setTheme(DEFAULT_THEME as "light" | "dark");
+      }
     };
     init();
   }, []);
@@ -82,7 +83,9 @@ export const useSystemSync = (onToggleSettings: () => void) => {
 
     const setupIpc = async () => {
       try {
-        const apiKey = await invoke<string>("get_api_key", { provider: "gemini" });
+        const apiKey = await invoke<string>("get_api_key", {
+          provider: "gemini",
+        });
         if (apiKey) {
           setApiKey(apiKey);
           initializeGemini(apiKey);
@@ -131,18 +134,18 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     setEditingModel(newModel);
     setActivePrompt(newPrompt);
     setEditingPrompt(newPrompt);
-    
+
     try {
-        await savePreferences({
-            prompt: newPrompt,
-            model: newModel,
-            theme: theme
-        });
-        showToast("Settings saved", "done");
+      await savePreferences({
+        prompt: newPrompt,
+        model: newModel,
+        theme: theme,
+      });
+      showToast("Settings saved", "done");
     } catch (e) {
-        console.error(e);
-        const msg = e instanceof Error ? e.message : String(e);
-        showToast(`Failed to save`, "error");
+      console.error(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(`Failed to save`, "error");
     }
   };
 
@@ -152,43 +155,35 @@ export const useSystemSync = (onToggleSettings: () => void) => {
 
   const handleLogout = async () => {
     try {
-        await invoke("logout");
-        // Clear User Data Only
-        setUserName("");
-        setUserEmail("");
-        setAvatarSrc("");
-        
-        // CRITICAL: We do NOT clear startupImage or sessionLensUrl here.
-        // This preserves the session for the next user.
+      await invoke("logout");
+      setUserName("");
+      setUserEmail("");
+      setAvatarSrc("");
     } catch (e) {
-        console.error("Logout failed", e);
+      console.error("Logout failed", e);
     }
   };
-
-// ... inside useSystemSync hook
 
   const handleResetAPIKey = async () => {
     try {
-        await invoke("reset_api_key");
-        
-        // 3. Clear State
-        setApiKey("");
-        setHasAgreed(null);
-        
-        // 4. Prevent "Update Page" hijack
-        sessionStorage.setItem('update_dismissed', 'true');
-        
-        // 5. Reload (The disk operation is guaranteed done because we awaited the promise)
-        window.location.reload();
+      await invoke("reset_api_key");
+      setApiKey("");
+      setHasAgreed(null);
+      sessionStorage.setItem("update_dismissed", "true");
+      window.location.reload();
     } catch (e) {
-        showToast("Reset failed", "error");
+      showToast("Reset failed", "error");
     }
   };
 
-  const updateUserData = (data: { name: string; email: string; avatar: string }) => {
-      setUserName(data.name);
-      setUserEmail(data.email);
-      setAvatarSrc(data.avatar);
+  const updateUserData = (data: {
+    name: string;
+    email: string;
+    avatar: string;
+  }) => {
+    setUserName(data.name);
+    setUserEmail(data.email);
+    setAvatarSrc(data.avatar);
   };
 
   return {
@@ -202,7 +197,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     sessionModel,
     setSessionModel,
     startupImage,
-    setStartupImage,    
+    setStartupImage,
     userName,
     userEmail,
     avatarSrc,
@@ -216,7 +211,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     hasAgreed,
     setHasAgreed,
     updateUserData,
-    sessionLensUrl, 
-    setSessionLensUrl 
+    sessionLensUrl,
+    setSessionLensUrl,
   };
 };

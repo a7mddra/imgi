@@ -9,7 +9,6 @@ import { Check, Copy, Terminal } from "lucide-react";
 import { createHighlighter, type Highlighter } from "shiki";
 import styles from "./CodeBlock.module.css";
 
-// Singleton Highlighter Promise
 let highlighterPromise: Promise<Highlighter> | null = null;
 
 const getHighlighterInstance = async () => {
@@ -102,16 +101,13 @@ const CodeBlockComponent = forwardRef<HTMLTextAreaElement, CodeBlockProps>(
       });
     };
 
-    // --- Editable Mode ---
     if (isEditable) {
       return (
         <div className={styles.wrapper}>
           <div className={styles.header}>
             <div className={styles.langLabel}>
               <Terminal size={14} />
-              <span className={styles.langName}>
-                {language || "text"}
-              </span>
+              <span className={styles.langName}>{language || "text"}</span>
             </div>
           </div>
           <textarea
@@ -127,15 +123,12 @@ const CodeBlockComponent = forwardRef<HTMLTextAreaElement, CodeBlockProps>(
       );
     }
 
-    // --- Read-Only Mode ---
     return (
       <div className={styles.wrapper}>
         <div className={styles.header}>
           <div className={styles.langLabel}>
             <Terminal size={14} />
-            <span className={styles.langName}>
-              {language || "text"}
-            </span>
+            <span className={styles.langName}>{language || "text"}</span>
           </div>
           <button
             onClick={handleCopy}

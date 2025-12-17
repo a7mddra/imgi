@@ -5,27 +5,42 @@
  */
 
 import React, { useLayoutEffect, useRef, useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { Send } from "lucide-react";
-import { CodeBlock } from "../CodeBlock/CodeBlock"; 
+import { CodeBlock } from "../CodeBlock/CodeBlock";
 import styles from "./ChatInput.module.css";
 
-// --- Icons ---
 const ExpandIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M4 10V4h6" />
     <path d="M20 14v6h-6" />
   </svg>
 );
 
 const CollapseIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M10 4v6H4" />
     <path d="M14 20v-6h6" />
   </svg>
 );
 
-// --- Props ---
 interface ChatInputProps {
   startupImage: { base64: string; mimeType: string } | null;
   input: string;
@@ -36,19 +51,17 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   startupImage,
-  input: value, // Renaming 'input' to 'value' for internal consistency
-  onInputChange: onChange, // Renaming for consistency
+  input: value,
+  onInputChange: onChange,
   onSend,
   isLoading,
 }) => {
-  // If no image, return null immediately (per original logic)
   if (!startupImage) return null;
 
   const maxRows = 7;
   const placeholder = isLoading ? "Thinking..." : "Ask anything...";
   const disabled = isLoading;
 
-  // --- Logic from PromptBox ---
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const codeTaRef = useRef<HTMLTextAreaElement | null>(null);
   const lineHeightRef = useRef<number>(24);
@@ -56,7 +69,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [isManualExpanded, setIsManualExpanded] = useState(false);
   const [showExpandBtn, setShowExpandBtn] = useState(false);
 
-  // Code Block State
   const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState("");
   const [originalCodeLanguage, setOriginalCodeLanguage] = useState("");
@@ -65,19 +77,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const isExpandedLayout = value.includes("\n") || isCodeBlockActive;
 
-  // Focus code block when activated
   useEffect(() => {
     if (isCodeBlockActive) {
       codeTaRef.current?.focus();
     }
   }, [isCodeBlockActive]);
 
-  // Adjust height logic
   const adjustHeight = React.useCallback(() => {
     const ta = taRef.current;
     if (!ta) return;
 
-    // Reset height to auto to correctly calculate scrollHeight
     ta.style.height = "auto";
     const scrollHeight = ta.scrollHeight;
 
@@ -100,9 +109,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       ta.style.overflowY = "hidden";
     }
 
-    // Ensure we start at the top when manually expanded
     if (isManualExpanded) {
-        ta.scrollTop = 0;
+      ta.scrollTop = 0;
     }
   }, [isManualExpanded, maxRows]);
 
@@ -110,22 +118,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     adjustHeight();
   }, [value, maxRows, isManualExpanded, isExpandedLayout, adjustHeight]);
 
-  // FIX: Listen for resize events (e.g. window resize or container resize)
-  // preventing the "giant input" bug when starting from hidden/small window.
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
 
     const observer = new ResizeObserver(() => {
-        adjustHeight();
+      adjustHeight();
     });
-    
+
     observer.observe(ta);
-    
+
     return () => observer.disconnect();
   }, [adjustHeight]);
 
-  // Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -153,7 +158,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     } else if (e.key === "Enter") {
       setConsecutiveEnters((prev) => prev + 1);
       if (consecutiveEnters >= 2) {
-        // 3rd enter exits code block
         setIsCodeBlockActive(false);
         const newPrompt = `${value}\n\`\`\`${codeLanguage}\n${codeValue.trim()}\n\`\`\`\n`;
         onChange(newPrompt);
@@ -194,7 +198,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <footer className={styles.footer}>
-      {/* Input Wrapper */}
       <div className={styles.inputWrapper}>
         <div
           className={`
@@ -203,7 +206,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             ${isExpandedLayout ? styles.expandedLayout : styles.standardLayout}
           `}
         >
-          {/* Expand/Collapse Button */}
           {showExpandBtn && isExpandedLayout && !isCodeBlockActive && (
             <div className={styles.expandButtonWrapper}>
               <button
@@ -241,8 +243,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             />
           )}
 
-          {/* Footer / Send Area */}
-          <div className={`${styles.actions} ${isExpandedLayout ? styles.expanded : ""}`}>
+          <div
+            className={`${styles.actions} ${
+              isExpandedLayout ? styles.expanded : ""
+            }`}
+          >
             <button
               type="button"
               onClick={() => {
@@ -250,7 +255,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               }}
               disabled={!isButtonActive}
               title={isLoading ? "Thinking..." : "Send"}
-              className={`${styles.sendButton} ${isButtonActive ? styles.active : styles.inactive}`}
+              className={`${styles.sendButton} ${
+                isButtonActive ? styles.active : styles.inactive
+              }`}
             >
               <Send size={20} />
             </button>
@@ -258,7 +265,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       </div>
 
-      {/* Disclaimer / Links */}
       <div className={styles.disclaimer}>
         <span>AI responses may include mistakes. </span>
         <a

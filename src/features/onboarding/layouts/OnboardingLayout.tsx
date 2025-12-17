@@ -12,11 +12,9 @@ interface OnboardingLayoutProps {
   description: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
-  /* Primary Action (Next/Install/Close) */
   onPrimaryAction?: () => void;
   primaryLabel?: string;
   disablePrimary?: boolean;
-  /* Secondary Action (Back/Cancel) */
   onSecondaryAction?: () => void;
   secondaryLabel?: string;
   hideHeader?: boolean;

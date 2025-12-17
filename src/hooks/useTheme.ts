@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { useContext, createContext } from "react";
 
 export interface ThemeContextType {
@@ -6,7 +12,9 @@ export interface ThemeContextType {
   setTheme: (theme: "light" | "dark") => void;
 }
 
-export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+export const ThemeContext = createContext<ThemeContextType | undefined>(
+  undefined
+);
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);

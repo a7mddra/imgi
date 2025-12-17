@@ -15,16 +15,16 @@ interface ImgBBResponse {
   };
 }
 
-export async function uploadToImgBB(base64Image: string, apiKey: string): Promise<string> {
-  // 1. Prepare Form Data
-  // ImgBB accepts base64 strings directly, but we need to strip the header if present.
+export async function uploadToImgBB(
+  base64Image: string,
+  apiKey: string
+): Promise<string> {
   const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, "");
-  
+
   const formData = new FormData();
   formData.append("key", apiKey);
   formData.append("image", cleanBase64);
 
-  // 2. Upload using Fetch
   const response = await fetch("https://api.imgbb.com/1/upload", {
     method: "POST",
     body: formData,

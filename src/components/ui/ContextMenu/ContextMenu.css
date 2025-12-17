@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 .context-menu {
   background-color: var(--neutral-800);
   border: 1px solid var(--neutral-500);
@@ -38,7 +44,6 @@
   opacity: 1;
 }
 
-/* Light mode overrides */
 body.light-mode .context-menu-item:hover, 
 html.light .context-menu-item:hover,
 body.light-mode .context-menu-item:focus,

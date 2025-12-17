@@ -6,8 +6,11 @@
 
 import { useState, useEffect } from "react";
 import { Message, ModelType } from "../types/chat.types";
-import { startNewChatStream, sendMessage } from "../../../lib/api/gemini/client";
-import systemPromptYaml from "../../../lib/config/prompts/system-prompt.yml?raw";
+import { systemPrompt } from "../../../lib/config/prompts";
+import {
+  startNewChatStream,
+  sendMessage,
+} from "../../../lib/api/gemini/client";
 
 export const useChatEngine = ({
   apiKey,
@@ -15,7 +18,7 @@ export const useChatEngine = ({
   startupImage,
   prompt,
   setCurrentModel,
-  enabled,  
+  enabled,
 }: {
   apiKey: string;
   currentModel: string;
@@ -25,9 +28,7 @@ export const useChatEngine = ({
   enabled: boolean;
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  // FIX 1: Initialize loading state based on 'enabled'. 
-  // If we are enabled, we should be shimmering immediately, waiting for the key.
-  const [isLoading, setIsLoading] = useState(enabled); 
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [isChatMode, setIsChatMode] = useState(false);
   const [streamingText, setStreamingText] = useState("");
@@ -36,14 +37,11 @@ export const useChatEngine = ({
   const [lastSentMessage, setLastSentMessage] = useState<Message | null>(null);
   const clearError = () => setError(null);
 
-  // FIX 2: Ensure loading state tracks 'enabled' prop changes
   useEffect(() => {
     if (enabled) setIsLoading(true);
   }, [enabled]);
 
   useEffect(() => {
-    // Only start the actual session when we have the key.
-    // The UI is already shimmering because of the fix above.
     if (enabled && startupImage && prompt && apiKey) {
       startSession(apiKey, currentModel, startupImage);
     }
@@ -60,15 +58,11 @@ export const useChatEngine = ({
     imgData: { base64: string; mimeType: string } | null,
     isRetry = false
   ) => {
-    // Ensure loading is true (redundant but safe)
     setIsLoading(true);
     setError(null);
 
-    // Double check key (though useEffect handles this mostly)
     if (!key) {
-        // If we reached here without a key, something is wrong, but we wait.
-        // We don't error out yet because it might be coming.
-        return;
+      return;
     }
 
     if (!isRetry) {
@@ -76,15 +70,12 @@ export const useChatEngine = ({
       setMessages([]);
       setFirstResponseId(null);
       setLastSentMessage(null);
-      
-      // Artificial delay for "Thinking" / Shimmer effect
-      // This runs AFTER the key is found, adding to the total shimmer time.
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 
     if (!imgData || !prompt) {
-       setIsLoading(false);
-       return;
+      setIsLoading(false);
+      return;
     }
 
     setIsStreaming(true);
@@ -94,7 +85,7 @@ export const useChatEngine = ({
       const responseId = Date.now().toString();
       setFirstResponseId(responseId);
 
-      const combinedPrompt = `<sys-prmp>\n${systemPromptYaml}\n</sys-prmp>\nMSS: ${prompt}`;
+      const combinedPrompt = `<sys-prmp>\n${systemPrompt}\n</sys-prmp>\nMSS: ${prompt}`;
 
       await startNewChatStream(
         modelId,
@@ -132,17 +123,13 @@ export const useChatEngine = ({
   };
 
   const handleReload = () => {
-     if (apiKey && startupImage && prompt) {
-         startSession(apiKey, currentModel, startupImage, false);
-     } else if (!apiKey) {
-         // Re-trigger startSession to show error manually if user clicks reload
-         // In this specific manual case, we might want to show an error if key is truly missing
-         setError("API Key missing. Please reset in settings.");
-         setIsLoading(false);
-     }
+    if (apiKey && startupImage && prompt) {
+      startSession(apiKey, currentModel, startupImage, false);
+    } else if (!apiKey) {
+      setError("API Key missing. Please reset in settings.");
+      setIsLoading(false);
+    }
   };
-
-  // ... (handleRetrySend and handleSend remain exactly the same) ...
 
   const handleRetrySend = async () => {
     if (!lastSentMessage) return;

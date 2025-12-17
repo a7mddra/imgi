@@ -1,8 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+/*
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 fn main() {
-  // Fix for IBus issues on Linux preventing keyboard input (Events queue growing too big)
-  // and force X11 backend to fix Wayland window resizing glitches/ghosting
   #[cfg(target_os = "linux")]
   {
     std::env::set_var("GTK_IM_MODULE", "xim");

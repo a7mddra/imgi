@@ -25,7 +25,6 @@ export const UserInfo: React.FC<UserInfoProps> = ({
 
   const [imageError, setImageError] = useState(false);
 
-  // Reset error state if the avatar URL changes (e.g., fresh login)
   useEffect(() => {
     setImageError(false);
   }, [avatarSrc]);
@@ -45,29 +44,31 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   }, [userEmail]);
 
   const renderAvatar = () => {
-    // We try to render the image if:
-    // 1. We have a source
-    // 2. We haven't encountered a load error yet
-    // 3. It's not the generic "blue silhouette" placeholder (optional preference)
-    const isValidSource = avatarSrc && !imageError && !avatarSrc.includes("googleusercontent.com/profile/picture/0");
-    
+    const isValidSource =
+      avatarSrc &&
+      !imageError &&
+      !avatarSrc.includes("googleusercontent.com/profile/picture/0");
+
     if (isValidSource) {
       return (
-        <img 
-            key={avatarSrc} // Force re-mount if URL changes
-            className={styles["avatar"]} 
-            src={avatarSrc} 
-            alt={userName} 
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-            onError={() => setImageError(true)}
+        <img
+          key={avatarSrc}
+          className={styles["avatar"]}
+          src={avatarSrc}
+          alt={userName}
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
+          onError={() => setImageError(true)}
         />
       );
     }
 
-    // Fallback: Initials
-    const initial = userName ? userName.charAt(0).toUpperCase() : (userEmail ? userEmail.charAt(0).toUpperCase() : "?");
-    
+    const initial = userName
+      ? userName.charAt(0).toUpperCase()
+      : userEmail
+      ? userEmail.charAt(0).toUpperCase()
+      : "?";
+
     return (
       <div
         className={styles["avatar"]}
@@ -79,7 +80,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
           fontSize: "20px",
           color: "white",
           fontWeight: "600",
-          userSelect: "none"
+          userSelect: "none",
         }}
       >
         {initial}

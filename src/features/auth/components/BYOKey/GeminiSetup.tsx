@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from "react";
 import styles from "../../layouts/AuthLayout.module.css";
 
@@ -18,15 +24,17 @@ export const GeminiSetup: React.FC<GeminiSetupProps> = ({ onComplete }) => {
     <div className={styles.viewContainer}>
       <div className={`${styles.container} ${styles.containerGemini}`}>
         <h1 className={styles.h1}>Let's get you started</h1>
-        <p className={styles.p}>This is a one-time setup. The key is free and private.</p>
+        <p className={styles.p}>
+          This is a one-time setup. The key is free and private.
+        </p>
         <ul className={styles.ul}>
           <li>Click the button below.</li>
           <li>Locate your "Default Gemini API Key", or Create one.</li>
           <li>Click Copy. (We will detect it automatically!)</li>
         </ul>
-        <button 
-          onClick={handleClick} 
-          className={`${styles.loginBtn} ${isLoading ? styles.disabled : ''}`}
+        <button
+          onClick={handleClick}
+          className={`${styles.loginBtn} ${isLoading ? styles.disabled : ""}`}
         >
           {isLoading ? (
             <div className={styles.spinner}></div>
@@ -39,7 +47,9 @@ export const GeminiSetup: React.FC<GeminiSetupProps> = ({ onComplete }) => {
           <div className={styles.btnBorder}></div>
         </button>
       </div>
-      <div className={styles.footer}>Your key stays on your device — we never see it.</div>
+      <div className={styles.footer}>
+        Your key stays on your device — we never see it.
+      </div>
     </div>
   );
 };

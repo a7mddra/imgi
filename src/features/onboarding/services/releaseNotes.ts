@@ -15,10 +15,6 @@ export interface ReleaseInfo {
   hasUpdate: boolean;
 }
 
-/**
- * Compares two semantic version strings.
- * Returns 1 if v1 > v2, -1 if v1 < v2, and 0 if v1 === v2.
- */
 function compareVersions(v1: string, v2: string): number {
   const parts1 = v1.split(".").map(Number);
   const parts2 = v2.split(".").map(Number);
@@ -50,36 +46,28 @@ export const fetchReleaseNotes = async (): Promise<ReleaseInfo> => {
     // flags: gm -> Global (find all), Multiline (^ matches start of lines)
     const headerRegex = /^##\s+\[?(\d+\.\d+\.\d+)\]?.*$/gm;
 
-    // Get all version headers in the file
     const matches = Array.from(text.matchAll(headerRegex));
 
     if (matches.length === 0) {
       return { version: packageJson.version, notes: "", hasUpdate: false };
     }
 
-    // 1. The first match is always the "Far Top" / Newest version
     const latestMatch = matches[0];
     const latestVersion = latestMatch[1];
 
-    // 2. Compare with current app version
     if (compareVersions(latestVersion, packageJson.version) <= 0) {
       return { version: latestVersion, notes: "", hasUpdate: false };
     }
 
-    // 3. Extract the body
-    // Start reading immediately after the first header line ends
     const startIdx = latestMatch.index! + latestMatch[0].length;
 
-    // Stop reading at the start of the NEXT header (if it exists), otherwise EOF
     const endIdx = matches.length > 1 ? matches[1].index! : text.length;
 
     const rawBody = text.slice(startIdx, endIdx);
 
-    // 4. Clean up: Filter for bullet points only
     const notes = rawBody
       .split("\n")
       .map((line) => line.trim())
-      // Keep lines starting with - or * (standard markdown lists)
       .filter((line) => line.startsWith("-") || line.startsWith("*"))
       .join("\n");
 

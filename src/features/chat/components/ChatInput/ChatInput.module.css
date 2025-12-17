@@ -1,4 +1,10 @@
-@import '../../../../styles/variables.css';
+/**
+ * @license
+ * Copyright 2025 a7mddra
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+@import "../../../../styles/variables.css";
 
 .footer {
   width: 100%;
@@ -9,7 +15,6 @@
   flex-shrink: 0;
 }
 
-/* Input Container Wrapper */
 .inputWrapper {
   width: 100%;
   max-width: 56rem;
@@ -49,7 +54,6 @@
   align-items: flex-end;
 }
 
-/* Expand/Collapse Button */
 .expandButtonWrapper {
   position: absolute;
   top: 0.5rem;
@@ -71,7 +75,6 @@
   color: var(--neutral-300);
 }
 
-/* Textarea styling */
 .textarea {
   background-color: transparent;
   font-size: 1rem;
@@ -91,7 +94,6 @@
   color: var(--neutral-500);
 }
 
-/* Footer Actions / Send Button */
 .actions {
   display: flex;
   align-items: center;
@@ -131,7 +133,6 @@
   color: var(--neutral-500);
 }
 
-/* Bottom Disclaimer Links */
 .disclaimer {
   text-align: center;
   font-size: 0.75rem;

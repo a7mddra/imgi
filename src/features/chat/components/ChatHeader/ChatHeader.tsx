@@ -6,9 +6,9 @@
 
 import React, { ForwardedRef } from "react";
 import { Settings, RotateCw } from "lucide-react";
-import { SettingsPanel } from "../../../settings/components/SettingsPanel/SettingsPanel";
+import { SettingsPanel } from "../../../settings";
+import { LensButton } from "../../../lens";
 import { ModelSelector } from "./ModelSelector";
-import LensButton from "../../../lens/components/Button/Button";
 import styles from "./ChatHeader.module.css";
 
 interface ChatHeaderProps {
@@ -22,7 +22,6 @@ interface ChatHeaderProps {
   settingsButtonRef: React.RefObject<HTMLButtonElement | null>;
   panelRef: React.RefObject<HTMLDivElement | null>;
   settingsPanelRef: ForwardedRef<{ handleClose: () => Promise<boolean> }>;
-  // Settings Panel Props
   prompt: string;
   editingModel: string;
   setPrompt: (prompt: string) => void;
@@ -36,13 +35,11 @@ interface ChatHeaderProps {
   onToggleTheme: () => void;
   onResetAPIKey: () => void;
   toggleSubview: (isActive: boolean) => void;
-  // Model Selector Props
   currentModel: string;
   onModelChange: (model: string) => void;
   isLoading: boolean;
   isChatMode: boolean;
   startupImage: { base64: string; mimeType: string } | null;
-  // NEW PROPS
   cachedUrl: string | null;
   setCachedUrl: (url: string) => void;
 }
@@ -75,13 +72,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isLoading,
   isChatMode,
   startupImage,
-  cachedUrl,     // <--- Receive
-  setCachedUrl,  // <--- Receive
+  cachedUrl,
+  setCachedUrl,
 }) => {
   return (
     <header className={styles.header}>
       <div className={styles.leftSection}>
-        {/* Settings & Reload Group */}
         <div className={styles.controlsWrapper}>
           <button
             ref={settingsButtonRef}
@@ -93,20 +89,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           >
             <Settings size={20} />
           </button>
-          
+
           <button
             onClick={onReload}
             className={styles.iconButton}
             title="Reload chat"
             disabled={isRotating}
           >
-            <RotateCw
-              size={20}
-              className={isRotating ? styles.rotating : ""}
-            />
+            <RotateCw size={20} className={isRotating ? styles.rotating : ""} />
           </button>
 
-          {/* Render SettingsPanel directly via Portal */}
           {isPanelVisible && (
             <SettingsPanel
               ref={settingsPanelRef}
@@ -130,7 +122,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           )}
         </div>
 
-        {/* Model Selector */}
         <div>
           <ModelSelector
             currentModel={currentModel}
@@ -140,12 +131,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
 
-       <LensButton 
-         isChatMode={isChatMode} 
-         startupImage={startupImage}
-         cachedUrl={cachedUrl}        // <--- Pass Down
-         setCachedUrl={setCachedUrl}  // <--- Pass Down
-       />
+      <LensButton
+        isChatMode={isChatMode}
+        startupImage={startupImage}
+        cachedUrl={cachedUrl}
+        setCachedUrl={setCachedUrl}
+      />
     </header>
   );
 };
