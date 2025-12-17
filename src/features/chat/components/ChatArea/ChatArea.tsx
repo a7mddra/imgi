@@ -45,7 +45,7 @@ export const ChatArea = forwardRef<HTMLDivElement, ChatAreaProps>(
     return (
       <div className="flex-1 overflow-y-auto" ref={ref}>
         <main>
-          <div className="mx-auto w-full max-w-4xl px-4 md:px-8">
+          <div className="mx-auto w-full max-w-4xl px-4 md:px-8 pb-12">
             {startupImage && !isChatMode && (
               <div className="min-h-[60vh]">
                 {isLoading && !streamingText ? (
