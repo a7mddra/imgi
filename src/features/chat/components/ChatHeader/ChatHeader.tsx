@@ -42,8 +42,10 @@ interface ChatHeaderProps {
   isLoading: boolean;
   isChatMode: boolean;
   startupImage: { base64: string; mimeType: string } | null;
+  // NEW PROPS
+  cachedUrl: string | null;
+  setCachedUrl: (url: string) => void;
 }
-
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isPanelActive,
   toggleSettingsPanel,
@@ -73,6 +75,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isLoading,
   isChatMode,
   startupImage,
+  cachedUrl,     // <--- Receive
+  setCachedUrl,  // <--- Receive
 }) => {
   return (
     <header className={styles.header}>
@@ -136,10 +140,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
 
-      <LensButton
-      isChatMode={isChatMode}
-      startupImage={startupImage}
-      />
+       <LensButton 
+         isChatMode={isChatMode} 
+         startupImage={startupImage}
+         cachedUrl={cachedUrl}        // <--- Pass Down
+         setCachedUrl={setCachedUrl}  // <--- Pass Down
+       />
     </header>
   );
 };

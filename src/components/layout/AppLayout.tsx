@@ -203,6 +203,15 @@ export const AppLayout: React.FC = () => {
     return <LoginScreen onComplete={auth.login} />;
   }
 
+  useEffect(() => {
+    const unlisten = listen<any>('auth-success', (event) => {
+        // 1. Update User Data UI immediately (No File Read needed!)
+        system.updateUserData(event.payload);
+        // 2. Switch to Chat UI (No Reload!)
+        auth.login(); 
+    });
+    return () => { unlisten.then(f => f()); };
+  }, []);
   // 4. Main Chat Interface
   return (
     <div
@@ -261,6 +270,8 @@ export const AppLayout: React.FC = () => {
         isPanelActive={isPanelActive}
         onResetAPIKey={system.handleResetAPIKey}
         onReload={chatEngine.handleReload} 
+                sessionLensUrl={system.sessionLensUrl}
+        setSessionLensUrl={system.setSessionLensUrl}
       />
       
       <div id="toast" className="toast"></div>

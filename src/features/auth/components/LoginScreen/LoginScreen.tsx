@@ -25,14 +25,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onComplete }) => {
   const handleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    
     try {
         await invoke("start_google_auth");
-        // Rust opens the browser. We just wait for the event now.
-    } catch (e) {
-        console.error("Auth failed to start", e);
-        setIsLoading(false);
-    }
+        // We do NOTHING here. 
+        // AppLayout is listening for 'auth-success' and will switch the view.
+    } catch (e) { /* ... */ }
   };
 
   return (

@@ -56,6 +56,8 @@ export interface ChatLayoutProps {
   isPanelActive: boolean;
   onResetAPIKey: () => void;
   onReload?: () => void;
+    sessionLensUrl: string | null;
+  setSessionLensUrl: (url: string) => void;
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({
@@ -88,6 +90,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   isPanelActive,
   onResetAPIKey,
   onReload,
+    sessionLensUrl,    // <--- Receive
+  setSessionLensUrl, 
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const settingsPanelRef = useRef<{ handleClose: () => Promise<boolean> }>(null);
@@ -245,6 +249,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         isLoading={isLoading}
         isChatMode={isChatMode}
         startupImage={startupImage}
+        cachedUrl={sessionLensUrl}        // <--- Pass Down
+        setCachedUrl={setSessionLensUrl}  
       />
 
       <ChatArea

@@ -185,6 +185,12 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     }
   };
 
+  const updateUserData = (data: { name: string; email: string; avatar: string }) => {
+      setUserName(data.name);
+      setUserEmail(data.email);
+      setAvatarSrc(data.avatar);
+  };
+
   return {
     apiKey,
     prompt: activePrompt,
@@ -209,6 +215,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
     handleResetAPIKey,
     hasAgreed,
     setHasAgreed,
+    updateUserData,
     sessionLensUrl, 
     setSessionLensUrl 
   };
