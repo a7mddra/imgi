@@ -1,16 +1,13 @@
 @import '../../../../styles/variables.css';
 
 .footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
   width: 100%;
   border-top: 1px solid var(--neutral-900);
   background-color: var(--neutral-950);
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
-  backdrop-filter: blur(24px);
   z-index: 50;
+  flex-shrink: 0;
 }
 
 /* Input Container Wrapper */
@@ -93,21 +90,6 @@
 
 .textarea::placeholder {
   color: var(--neutral-500);
-}
-
-/* Scrollbar Customization */
-.textarea::-webkit-scrollbar {
-  width: 6px;
-}
-.textarea::-webkit-scrollbar-track {
-  background: transparent;
-}
-.textarea::-webkit-scrollbar-thumb {
-  background-color: var(--neutral-800);
-  border-radius: 3px;
-}
-.textarea::-webkit-scrollbar-thumb:hover {
-  background-color: var(--neutral-900);
 }
 
 /* Footer Actions / Send Button */

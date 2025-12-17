@@ -55,14 +55,14 @@
 }
 
 .userBubble {
-  background-color: var(--neutral-800); 
+  background-color: var(--neutral-900); 
   border: 1px solid var(--neutral-700);
 }
 
 .botBubble {
-  background-color: transparent;
+  background-color: var(--neutral-950); 
   border: none;
-  padding-left: 0;
+  padding-left: 10;
 }
 
 .inlineCode {

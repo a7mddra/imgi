@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(38, 38, 38, 0.8); /* neutral-800 with 80% opacity */
+  background-color: var(--neutral-800);
   padding: 0.5rem 1rem; /* py-2 px-4 */
   color: var(--neutral-400);
 }
@@ -69,10 +69,6 @@
 
 .copyButton:disabled {
   cursor: default;
-}
-
-.copiedText {
-  color: #4ade80; /* green-400 */
 }
 
 /* Code Content Area */

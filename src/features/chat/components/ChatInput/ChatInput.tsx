@@ -154,7 +154,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    const match = newValue.match(/(^|\n)```(\w*)\n$/);
+    const match = newValue.match(/(^|\n)```([^\n]*)\n$/);
 
     if (match && !isCodeBlockActive) {
       const codeBlockCount = (newValue.match(/```/g) || []).length;
@@ -162,7 +162,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         setIsCodeBlockActive(true);
         setOriginalCodeLanguage(match[2]);
         setCodeLanguage(match[2] || "text");
-        onChange(newValue.replace(/(^|\n)```(\w*)\n$/, "$1"));
+        onChange(newValue.replace(/(^|\n)```([^\n]*)\n$/, "$1"));
       } else {
         onChange(newValue);
       }

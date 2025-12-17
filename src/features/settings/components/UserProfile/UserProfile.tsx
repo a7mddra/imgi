@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import styles from "../SettingsPanel/SettingsPanel.module.css";
+import styles from "./UserProfile.module.css";
 
 interface UserInfoProps {
   userName: string;

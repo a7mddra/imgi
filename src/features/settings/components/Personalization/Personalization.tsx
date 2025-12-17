@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import styles from "../SettingsPanel/SettingsPanel.module.css";
+import styles from "./Personalization.module.css";
 
 interface ModelInfo {
   id: string;
@@ -40,7 +40,7 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
     <div className={`${styles["subview"]} ${isActive ? styles["active"] : ""}`} id="promptView">
       <div className={styles["subview-header"]}>
         <button className={styles["back-btn"]} id="backPromptBtn" onClick={onBack}>
-          <i className="fas fa-arrow-left" />
+          <i className="fas fa-chevron-left" />
         </button>
         <button className={styles["reset-btn"]} id="resetPromptBtn" onClick={onReset}>
           Reset{" "}
@@ -49,7 +49,8 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
       </div>
       <div className={styles["subview-content"]}>
         <label htmlFor="promptTextarea">Customize Prompt</label>
-        <textarea
+        <div className={styles["prompt-container"]}>
+          <textarea
           className={styles["prompt-textarea"]}
           id="promptTextarea"
           placeholder="Write a prompt..."
@@ -57,7 +58,7 @@ export const PersonalContext: React.FC<PersonalContextProps> = ({
           onChange={(e) => {
             setLocalPrompt(e.target.value);
           }}
-        />
+        /> </div>
 
         <div className={styles["form-group"]}>
           <label>Default Model</label>

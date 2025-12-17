@@ -145,7 +145,7 @@ const CodeBlockComponent = forwardRef<HTMLTextAreaElement, CodeBlockProps>(
           >
             {isCopied ? (
               <>
-                <Check size={14} className={styles.copiedText} /> Copied
+                <Check size={14} /> Copied
               </>
             ) : (
               <>
@@ -162,7 +162,7 @@ const CodeBlockComponent = forwardRef<HTMLTextAreaElement, CodeBlockProps>(
             <pre className={styles.pre}>{value}</pre>
           ) : (
             <div
-              className={styles.shikiContainer}
+              className={`${styles.shikiContainer} shiki-dual-theme`}
               dangerouslySetInnerHTML={{ __html: highlightedCode }}
             />
           )}

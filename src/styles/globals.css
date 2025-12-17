@@ -59,13 +59,13 @@ body.light-mode {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--neutral-800);
+  background: var(--neutral-650);
   border-radius: 4px;
   transition: background-color 0.3s ease-in-out;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--neutral-900);
+  background: var(--neutral-700);
 }
 
 .token {
