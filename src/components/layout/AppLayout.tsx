@@ -14,6 +14,7 @@ import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useSystemSync } from "../../hooks/useSystemSync";
 import { useChatEngine } from "../../features/chat/hooks/useChat";
 import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
+import { useWindowManager } from "../../hooks/useWindowManager";
 import { exit } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
@@ -36,6 +37,8 @@ export const AppLayout: React.FC = () => {
   };
   useUpdateCheck();
 
+  const [isCheckingImage, setIsCheckingImage] = useState(true);
+
   // Listen for CLI image path on startup
   useEffect(() => {
     const initStartupImage = async () => {
@@ -48,6 +51,8 @@ export const AppLayout: React.FC = () => {
         }
       } catch (e) {
         console.error("Failed to check initial image:", e);
+      } finally {
+        setIsCheckingImage(false);
       }
     };
 
@@ -74,7 +79,7 @@ export const AppLayout: React.FC = () => {
   }, []);
 
   const isAgreementPending = system.hasAgreed === false;
-  const isLoadingState = system.hasAgreed === null || auth.authStage === 'LOADING';
+  const isLoadingState = system.hasAgreed === null || auth.authStage === 'LOADING' || isCheckingImage;
   const isImageMissing = !system.startupImage;
   const isAuthPending = auth.authStage === 'GEMINI_SETUP' || auth.authStage === 'LOGIN';
 
@@ -102,6 +107,16 @@ export const AppLayout: React.FC = () => {
      const wasDismissed = sessionStorage.getItem('update_dismissed');
      return !!pendingUpdate && !wasDismissed;
   });
+
+  // --- GEM ACTIVATION: Auto-Resize ---
+  // We pass the raw flags so the hook can decide "Onboarding" vs "Chat"
+  useWindowManager(
+    isChatActive,
+    isAuthPending,
+    isAgreementPending,
+    showUpdate, // Treat update screen as a "Onboarding" page
+    isLoadingState // <--- NEW: Pass loading state
+  );
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; selectedText: string } | null>(null);
 

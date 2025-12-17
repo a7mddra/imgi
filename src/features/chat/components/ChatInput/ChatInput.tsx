@@ -73,10 +73,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, [isCodeBlockActive]);
 
   // Adjust height logic
-  const adjustHeight = () => {
+  const adjustHeight = React.useCallback(() => {
     const ta = taRef.current;
     if (!ta) return;
 
+    // Reset height to auto to correctly calculate scrollHeight
     ta.style.height = "auto";
     const scrollHeight = ta.scrollHeight;
 
@@ -103,11 +104,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (isManualExpanded) {
         ta.scrollTop = 0;
     }
-  };
+  }, [isManualExpanded, maxRows]);
 
   useLayoutEffect(() => {
     adjustHeight();
-  }, [value, maxRows, isManualExpanded, isExpandedLayout]);
+  }, [value, maxRows, isManualExpanded, isExpandedLayout, adjustHeight]);
+
+  // FIX: Listen for resize events (e.g. window resize or container resize)
+  // preventing the "giant input" bug when starting from hidden/small window.
+  useEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+
+    const observer = new ResizeObserver(() => {
+        adjustHeight();
+    });
+    
+    observer.observe(ta);
+    
+    return () => observer.disconnect();
+  }, [adjustHeight]);
 
   // Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

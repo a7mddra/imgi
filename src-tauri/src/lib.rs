@@ -16,7 +16,7 @@ use std::sync::{
 };
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, Size};
 
 // Import the Auth module (ensure auth.rs is in the same folder)
 mod auth;
@@ -47,6 +47,66 @@ impl AppState {
 // ============================================================================
 // HELPER FUNCTIONS (Internal)
 // ============================================================================
+
+fn calculate_dynamic_window(
+    app: &AppHandle,
+    base_w: f64,
+    base_h: f64,
+) -> Result<(f64, f64, f64, f64), String> {
+    // 1. Get the Primary Monitor (Tauri v2 currently limits global cursor access for security,
+    //    so we default to Primary. This is 99% effective for initial launch).
+    let monitor = app.primary_monitor().map_err(|e| e.to_string())?
+        .ok_or("No monitor found")?;
+    
+    let size = monitor.size();
+    let pos = monitor.position();
+    
+    // Work Area Dimensions (Physical Pixels)
+    let screen_w = size.width as f64;
+    let screen_h = size.height as f64;
+    
+    // Your Reference: 1366 x 768
+    let frac_w = base_w / 1366.0;
+    let frac_h = base_h / 768.0;
+
+    // Calculate Target Dimensions
+    let win_w = (frac_w * screen_w).floor();
+    let win_h = (frac_h * screen_h).floor();
+
+    // Center it on the monitor
+    // Monitor X + (Monitor Width - Window Width) / 2
+    let x = pos.x as f64 + (screen_w - win_w) / 2.0;
+    let y = pos.y as f64 + (screen_h - win_h) / 2.0;
+
+    Ok((x, y, win_w, win_h))
+}
+
+// Helper to spawn windows using the calculated geometry
+fn spawn_smart_window(app: &AppHandle, label: &str, url: &str, base_w: f64, base_h: f64, title: &str) -> Result<(), String> {
+    if app.get_webview_window(label).is_some() {
+        return Ok(()); // Already open
+    }
+
+    let (x, y, w, h) = calculate_dynamic_window(app, base_w, base_h)
+        .unwrap_or((100.0, 100.0, base_w, base_h)); // Fallback
+
+    // GEMINI FIX: Start "main" hidden to prevent FOIT (Flash of Unstyled Content/Size)
+    // The frontend will call `resize_window(..., true)` when ready to show.
+    let visible = label != "main";
+
+    WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
+        .title(title)
+        .position(x, y) // Physical Position
+        .inner_size(w, h) // Physical Size
+        .visible(visible)
+        .resizable(true)
+        .decorations(true)
+        .background_color(tauri::window::Color(10, 10, 10, 255))
+        .build()
+        .map_err(|e| e.to_string())?;
+        
+    Ok(())
+}
 
 // --- File & Path Helpers ---
 
@@ -414,30 +474,10 @@ fn get_user_data(app: AppHandle) -> serde_json::Value {
 }
 
 // --- 4. Window & Utility Commands ---
-
 #[tauri::command]
 async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("imgbb-setup") {
-        let _ = window.set_focus();
-        return Ok(());
-    }
-
-    WebviewWindowBuilder::new(
-        &app,
-        "imgbb-setup",
-        WebviewUrl::App("index.html?mode=imgbb".into()),
-    )
-    .title("ImgBB Setup")
-    .inner_size(480.0, 430.0)
-    .resizable(false)
-    .minimizable(false)
-    .maximizable(false)
-    .always_on_top(true)
-    .center()
-    .build()
-    .map_err(|e| e.to_string())?;
-
-    Ok(())
+    // 480x430 was your dev value. We pass that as the "Reference Base".
+    spawn_smart_window(&app, "imgbb-setup", "index.html?mode=imgbb", 480.0, 430.0, "ImgBB Setup")
 }
 
 #[tauri::command]
@@ -445,6 +485,36 @@ fn close_imgbb_window(app: AppHandle) {
     if let Some(win) = app.get_webview_window("imgbb-setup") {
         let _ = win.close();
     }
+}
+
+// NEW COMMAND: React calls this to snap the window size
+#[tauri::command]
+async fn resize_window(app: AppHandle, width: f64, height: f64, show: Option<bool>) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("Main window not found")?;
+
+    // Apply the "Gem" math to find the physical pixel size for this monitor
+    let (x, y, target_w, target_h) = calculate_dynamic_window(&app, width, height)?;
+
+    // Resize (Smoothly if possible by OS, but usually instant)
+    // We use PhysicalSize because our math calculated real pixels
+    window.set_size(Size::Physical(tauri::PhysicalSize {
+        width: target_w as u32,
+        height: target_h as u32,
+    })).map_err(|e| e.to_string())?;
+    
+    // GEMINI FIX: Always re-center (update position) after resize
+    window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+        x: x as i32,
+        y: y as i32,
+    })).map_err(|e| e.to_string())?;
+
+    // GEMINI FIX: Show window if requested (handles the initial unhide)
+    if show.unwrap_or(false) {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 // Async wrapper to ensure xdg-open doesn't block main thread
@@ -512,6 +582,7 @@ pub fn run() {
             close_imgbb_window,
             open_external_url,
             clear_cache,
+            resize_window,
             // Stubs
             get_prompt,
             get_model,
@@ -536,6 +607,34 @@ pub fn run() {
                     let _ = handle.emit("image-path", path);
                 }
             }
+            // --- GEM 1 & 2 IMPLEMENTATION: Smart Main Window Launch ---
+            
+            // 1. Determine "Onboarding Page" vs "Chat Page"
+            // We check if 'profile.json' exists.
+            let config_dir = get_app_config_dir(&handle);
+            let has_profile = config_dir.join("profile.json").exists();
+            let has_gemini = config_dir.join("gemini_key.json").exists();
+            
+            // If we have auth, we are in "Chat Mode" (Bigger window)
+            // If missing keys, we are in "Onboarding Mode" (Smaller window)
+            let is_onboarding_page = !has_profile || !has_gemini;
+
+            let (base_w, base_h) = if is_onboarding_page {
+                (800.0, 600.0) // Onboarding Size
+            } else {
+                (900.0, 700.0) // Chat Size
+            };
+
+            // 2. Spawn the Main Window dynamically
+            // This replaces the static config in tauri.conf.json
+            spawn_smart_window(
+                &handle, 
+                "main", 
+                "index.html", 
+                base_w, 
+                base_h, 
+                "spatialshot"
+            ).expect("Failed to spawn main window");
 
             Ok(())
         })

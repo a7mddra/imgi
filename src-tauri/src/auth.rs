@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
@@ -40,12 +40,16 @@ struct TokenResponse {
 #[derive(Deserialize)]
 struct UserProfile {
     names: Option<Vec<Name>>,
-    emailAddresses: Option<Vec<Email>>,
+    #[serde(rename = "emailAddresses")]
+    email_addresses: Option<Vec<Email>>,
     photos: Option<Vec<Photo>>,
 }
 
 #[derive(Deserialize)]
-struct Name { displayName: Option<String> }
+struct Name { 
+    #[serde(rename = "displayName")]
+    display_name: Option<String> 
+}
 #[derive(Deserialize)]
 struct Email { value: Option<String> }
 #[derive(Deserialize)]
@@ -137,8 +141,8 @@ pub fn start_google_auth_flow(app: AppHandle, config_dir: PathBuf) -> Result<(),
             let profile: UserProfile = profile_res.json().map_err(|e| e.to_string())?;
 
             // C. Extract & Clean Data
-            let name = profile.names.and_then(|n| n.first().and_then(|x| x.displayName.clone())).unwrap_or("Spatial User".to_string());
-            let email = profile.emailAddresses.and_then(|e| e.first().and_then(|x| x.value.clone())).unwrap_or_default();
+            let name = profile.names.and_then(|n| n.first().and_then(|x| x.display_name.clone())).unwrap_or("Spatial User".to_string());
+            let email = profile.email_addresses.and_then(|e| e.first().and_then(|x| x.value.clone())).unwrap_or_default();
             
             let mut avatar = profile.photos.and_then(|p| p.first().and_then(|x| x.url.clone())).unwrap_or_default();
             if avatar.starts_with("http://") {

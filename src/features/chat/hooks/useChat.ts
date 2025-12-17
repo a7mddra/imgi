@@ -55,19 +55,12 @@ export const useChatEngine = ({
     setIsLoading(true);
     setError(null);
 
-    // FIX: Critical validation
-    if (!key) {
-        setIsLoading(false);
-        setError("API Key missing. Please reset in settings.");
-        return;
-    }
-
     if (!isRetry) {
       resetInitialUi();
       setMessages([]);
       setFirstResponseId(null);
       setLastSentMessage(null);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     if (!imgData || !prompt) {
@@ -77,7 +70,7 @@ export const useChatEngine = ({
 
     if (!key) {
         setIsLoading(false);
-        setError("API Key not found. Please check your settings.");
+        setError("API Key missing. Please reset in settings.");
         return;
     }
 
