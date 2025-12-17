@@ -5,22 +5,29 @@ use tauri::{AppHandle, Emitter};
 use tiny_http::{Server, Response, Header};
 use url::Url;
 
-// 1. Embed external files at Compile Time
-// This embeds the files into the .exe/binary so you don't need to ship json files.
+// Embed external files at Compile Time
 const SECRETS_JSON: &str = include_str!("data/credentials.json");
+// We assume src-tauri/src/data/success.html contains your FULL original HTML template
 const HTML_TEMPLATE: &str = include_str!("data/success.html");
 
-const REDIRECT_PORT: u16 = 3456;
+// FIX: Use Port 3000 to match Google Console default & avoid Vite (3456) collision
+const REDIRECT_PORT: u16 = 3000;
+const REDIRECT_URI: &str = "http://localhost:3000";
+const USER_INFO_URL: &str = "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,photos";
 
 // --- CONFIG STRUCTS ---
-#[derive(Deserialize)]
-struct OAuthSecrets {
+#[derive(Deserialize, Debug)]
+struct GoogleCredentials {
+    installed: Option<OAuthConfig>,
+    web: Option<OAuthConfig>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct OAuthConfig {
     client_id: String,
     client_secret: String,
-    redirect_uri: String,
-    auth_url: String,
-    token_url: String,
-    user_info_url: String,
+    auth_uri: String,
+    token_uri: String,
 }
 
 // --- DATA STRUCTS ---
@@ -32,17 +39,18 @@ struct TokenResponse {
 #[derive(Deserialize)]
 struct UserProfile {
     names: Option<Vec<Name>>,
-    email_addresses: Option<Vec<Email>>,
+    emailAddresses: Option<Vec<Email>>,
     photos: Option<Vec<Photo>>,
 }
 
 #[derive(Deserialize)]
-struct Name { display_name: Option<String> }
+struct Name { displayName: Option<String> }
 #[derive(Deserialize)]
 struct Email { value: Option<String> }
 #[derive(Deserialize)]
 struct Photo { url: Option<String> }
 
+// The clean format we save to disk
 #[derive(Serialize)]
 struct SavedProfile {
     name: String,
@@ -52,62 +60,89 @@ struct SavedProfile {
 
 // --- MAIN FUNCTION ---
 
+// ... imports and structs remain the same ...
+
 pub fn start_google_auth_flow(app: AppHandle, config_dir: PathBuf) -> Result<(), String> {
-    // 2. Parse Secrets
-    let secrets: OAuthSecrets = serde_json::from_str(SECRETS_JSON)
-        .map_err(|e| format!("Failed to parse secrets.json: {}", e))?;
+    // 1. Parse Credentials
+    let wrapper: GoogleCredentials = serde_json::from_str(SECRETS_JSON)
+        .map_err(|e| format!("Failed to parse credentials.json: {}", e))?;
 
-    // 3. Start Server
+    let secrets = wrapper.installed.or(wrapper.web)
+        .ok_or("Invalid credentials.json: missing 'installed' or 'web' object")?;
+
+    // 2. Start Local Server
     let server = Server::http(format!("127.0.0.1:{}", REDIRECT_PORT))
-        .map_err(|e| format!("Failed to start server: {}", e))?;
+        .map_err(|e| format!("Failed to start auth server on port {}: {}", REDIRECT_PORT, e))?;
 
-    // 4. Generate URL dynamically
+    // 3. Generate Auth URL
     let auth_url_full = format!(
-        "{}?client_id={}&redirect_uri={}&response_type=code&scope=profile email&access_type=offline",
-        secrets.auth_url, secrets.client_id, secrets.redirect_uri
+        "{}?client_id={}&redirect_uri={}&response_type=code&scope=profile email&access_type=offline&prompt=consent",
+        secrets.auth_uri, secrets.client_id, REDIRECT_URI
     );
 
+    // 4. Open Default Browser
     opener::open(&auth_url_full).map_err(|e| e.to_string())?;
 
-    // 5. Wait for Callback
-    if let Some(request) = server.recv().ok() {
+    // 5. Wait for VALID Callback (Loop to ignore favicons)
+    // We loop here so that if the browser requests a favicon first, we don't crash/exit.
+    loop {
+        let request = match server.recv() {
+            Ok(rq) => rq,
+            Err(e) => {
+                println!("Server receive error: {}", e);
+                break; 
+            }
+        };
+
         let url_string = format!("http://localhost:{}{}", REDIRECT_PORT, request.url());
-        let url = Url::parse(&url_string).map_err(|_| "Failed to parse URL")?;
         
+        // FIX: Ignore favicon requests so they don't consume the one-time token slot
+        if url_string.contains("favicon.ico") {
+            // Send a 404 for the icon so the browser stops asking
+            let _ = request.respond(Response::empty(404));
+            continue; // Go back to top of loop and wait for the real request
+        }
+
+        // Logic for real callback
+        let url = Url::parse(&url_string).map_err(|_| "Failed to parse callback URL")?;
         let code_pair = url.query_pairs().find(|(key, _)| key == "code");
 
         if let Some((_, code)) = code_pair {
-            // A. Exchange Code
+            // A. Exchange Authorization Code for Access Token
             let client = reqwest::blocking::Client::new();
-            let token_res = client.post(&secrets.token_url)
+            let token_res = client.post(&secrets.token_uri)
                 .form(&[
                     ("client_id", &secrets.client_id),
                     ("client_secret", &secrets.client_secret),
                     ("code", &code.to_string()),
                     ("grant_type", &"authorization_code".to_string()),
-                    ("redirect_uri", &secrets.redirect_uri),
+                    ("redirect_uri", &REDIRECT_URI.to_string()),
                 ])
                 .send()
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("Token Exchange Failed: {}", e))?;
 
             if !token_res.status().is_success() {
-                return respond_html(request, "Authentication Failed", "Google refused the code exchange.", true);
+                return respond_html(request, "Auth Failed", "Google refused the code exchange.", true);
             }
 
             let token_data: TokenResponse = token_res.json().map_err(|e| e.to_string())?;
 
-            // B. Get Profile
-            let profile_res = client.get(&secrets.user_info_url)
+            // B. Fetch User Profile
+            let profile_res = client.get(USER_INFO_URL)
                 .bearer_auth(token_data.access_token)
                 .send()
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("Profile Fetch Failed: {}", e))?;
 
             let profile: UserProfile = profile_res.json().map_err(|e| e.to_string())?;
 
-            // C. Extract Data
-            let name = profile.names.and_then(|n| n.first().and_then(|x| x.display_name.clone())).unwrap_or_default();
-            let email = profile.email_addresses.and_then(|e| e.first().and_then(|x| x.value.clone())).unwrap_or_default();
-            let avatar = profile.photos.and_then(|p| p.first().and_then(|x| x.url.clone())).unwrap_or_default();
+            // C. Extract & Clean Data
+            let name = profile.names.and_then(|n| n.first().and_then(|x| x.displayName.clone())).unwrap_or("Spatial User".to_string());
+            let email = profile.emailAddresses.and_then(|e| e.first().and_then(|x| x.value.clone())).unwrap_or_default();
+            
+            let mut avatar = profile.photos.and_then(|p| p.first().and_then(|x| x.url.clone())).unwrap_or_default();
+            if avatar.starts_with("http://") {
+                avatar = avatar.replace("http://", "https://");
+            }
 
             // D. Save to Disk
             let user_data = SavedProfile { name, email, avatar };
@@ -125,8 +160,14 @@ pub fn start_google_auth_flow(app: AppHandle, config_dir: PathBuf) -> Result<(),
                 "<p>Spatialshot is now connected to your Google Account.</p><p>You can close this tab.</p>", 
                 false
             );
+
+            // SUCCESS! Break the loop and finish the command.
+            return Ok(());
         } else {
-            let _ = respond_html(request, "Authentication Failed", "No code found.", true);
+            // Handle "Access Denied" or missing code
+            let _ = respond_html(request, "Authentication Failed", "No authorization code found.", true);
+            // We return OK here to stop the thread, assuming the user denied access.
+            return Ok(());
         }
     }
 
@@ -134,14 +175,18 @@ pub fn start_google_auth_flow(app: AppHandle, config_dir: PathBuf) -> Result<(),
 }
 
 fn respond_html(request: tiny_http::Request, title: &str, content: &str, is_error: bool) -> Result<(), String> {
-    let color = if is_error { "#d93025" } else { "#202124" };
+    let title_color = if is_error { "#d93025" } else { "#202124" };
+    let breadcrumb = if is_error { "Error" } else { "Confirmation" };
+    // This matches your original logic: const dynamicStyle = `<style>:root { --title-color: ${titleColor}; }</style>`;
+    let dynamic_style = format!("<style>:root {{ --title-color: {}; }}</style>", title_color);
     
-    // Replace placeholders in your external HTML file
+    // Inject variables into the HTML template
+    // Note: We use ${placeholder} in the template file, just like your Node code
     let html = HTML_TEMPLATE
         .replace("${title}", title)
-        .replace("${bodyContent}", content) // Changed to bodyContent to match your vanilla HTML
-        .replace("${breadcrumb}", if is_error { "Error" } else { "Success" })
-        .replace("${dynamicStyle}", &format!("<style>:root {{ --title-color: {}; }}</style>", color));
+        .replace("${dynamicStyle}", &dynamic_style)
+        .replace("${breadcrumb}", breadcrumb)
+        .replace("${bodyContent}", content);
 
     let response = Response::from_string(html)
         .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap());

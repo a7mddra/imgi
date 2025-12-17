@@ -37,16 +37,27 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     return () => window.removeEventListener("resize", checkOverflow);
   }, [userEmail]);
   const renderAvatar = () => {
-    if (
-      avatarSrc &&
-      !avatarSrc.includes("googleusercontent.com/profile/picture/0")
-    ) {
+    // 1. If we have a valid source AND it's not the generic Google placeholder
+    const isValidSource = avatarSrc && !avatarSrc.includes("googleusercontent.com/profile/picture/0");
+    
+    if (isValidSource) {
       return (
-        <img className={styles["avatar"]} src={avatarSrc} alt={userName} />
+        <img 
+            className={styles["avatar"]} 
+            src={avatarSrc} 
+            alt={userName} 
+            onError={(e) => {
+                // If the image fails to load, force hide it so fallback shows
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden'); 
+            }}
+        />
       );
     }
-    // Fallback: Initials
-    const initial = userName ? userName.charAt(0).toUpperCase() : "?";
+
+    // 2. Fallback: Initials
+    const initial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
+    
     return (
       <div
         className={styles["avatar"]}
@@ -55,15 +66,17 @@ export const UserInfo: React.FC<UserInfoProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "24px",
+          fontSize: "20px",
           color: "white",
-          fontWeight: "bold",
+          fontWeight: "600",
+          userSelect: "none"
         }}
       >
         {initial}
       </div>
     );
   };
+
   return (
     <div className={styles["user-info"]}>
       <div className={styles["user-info-main"]}>
