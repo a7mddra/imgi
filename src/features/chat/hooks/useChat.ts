@@ -25,7 +25,9 @@ export const useChatEngine = ({
   enabled: boolean;
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // FIX 1: Initialize loading state based on 'enabled'. 
+  // If we are enabled, we should be shimmering immediately, waiting for the key.
+  const [isLoading, setIsLoading] = useState(enabled); 
   const [error, setError] = useState<string | null>(null);
   const [isChatMode, setIsChatMode] = useState(false);
   const [streamingText, setStreamingText] = useState("");
@@ -34,10 +36,16 @@ export const useChatEngine = ({
   const [lastSentMessage, setLastSentMessage] = useState<Message | null>(null);
   const clearError = () => setError(null);
 
+  // FIX 2: Ensure loading state tracks 'enabled' prop changes
   useEffect(() => {
-    // FIX: Only start if enabled is true
-    if (enabled && startupImage && prompt) {
-      startSession(apiKey || "", currentModel, startupImage);
+    if (enabled) setIsLoading(true);
+  }, [enabled]);
+
+  useEffect(() => {
+    // Only start the actual session when we have the key.
+    // The UI is already shimmering because of the fix above.
+    if (enabled && startupImage && prompt && apiKey) {
+      startSession(apiKey, currentModel, startupImage);
     }
   }, [apiKey, prompt, startupImage, currentModel, enabled]);
 
@@ -52,26 +60,31 @@ export const useChatEngine = ({
     imgData: { base64: string; mimeType: string } | null,
     isRetry = false
   ) => {
+    // Ensure loading is true (redundant but safe)
     setIsLoading(true);
     setError(null);
+
+    // Double check key (though useEffect handles this mostly)
+    if (!key) {
+        // If we reached here without a key, something is wrong, but we wait.
+        // We don't error out yet because it might be coming.
+        return;
+    }
 
     if (!isRetry) {
       resetInitialUi();
       setMessages([]);
       setFirstResponseId(null);
       setLastSentMessage(null);
+      
+      // Artificial delay for "Thinking" / Shimmer effect
+      // This runs AFTER the key is found, adding to the total shimmer time.
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     if (!imgData || !prompt) {
        setIsLoading(false);
        return;
-    }
-
-    if (!key) {
-        setIsLoading(false);
-        setError("API Key missing. Please reset in settings.");
-        return;
     }
 
     setIsStreaming(true);
@@ -122,10 +135,14 @@ export const useChatEngine = ({
      if (apiKey && startupImage && prompt) {
          startSession(apiKey, currentModel, startupImage, false);
      } else if (!apiKey) {
-         // Re-trigger startSession to show error
-         startSession("", currentModel, startupImage, false);
+         // Re-trigger startSession to show error manually if user clicks reload
+         // In this specific manual case, we might want to show an error if key is truly missing
+         setError("API Key missing. Please reset in settings.");
+         setIsLoading(false);
      }
   };
+
+  // ... (handleRetrySend and handleSend remain exactly the same) ...
 
   const handleRetrySend = async () => {
     if (!lastSentMessage) return;

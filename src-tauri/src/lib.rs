@@ -16,7 +16,7 @@ use std::sync::{
 };
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, Size};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, Size, WindowEvent};
 
 // Import the Auth module (ensure auth.rs is in the same folder)
 mod auth;
@@ -82,7 +82,7 @@ fn calculate_dynamic_window(
 }
 
 // Helper to spawn windows using the calculated geometry
-fn spawn_smart_window(app: &AppHandle, label: &str, url: &str, base_w: f64, base_h: f64, title: &str) -> Result<(), String> {
+fn spawn_app_window(app: &AppHandle, label: &str, url: &str, base_w: f64, base_h: f64, title: &str) -> Result<(), String> {
     if app.get_webview_window(label).is_some() {
         return Ok(()); // Already open
     }
@@ -94,7 +94,7 @@ fn spawn_smart_window(app: &AppHandle, label: &str, url: &str, base_w: f64, base
     // The frontend will call `resize_window(..., true)` when ready to show.
     let visible = label != "main";
 
-    WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
+    let win = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
         .title(title)
         .position(x, y) // Physical Position
         .inner_size(w, h) // Physical Size
@@ -132,7 +132,7 @@ fn process_bytes_internal(buffer: Vec<u8>, state: &State<AppState>) -> Result<St
         return Err("Empty image buffer".to_string());
     }
 
-    // Smart Format Detection
+    // app Format Detection
     let mime_type = image::guess_format(&buffer)
         .map(|f| f.to_mime_type())
         .unwrap_or("image/jpeg");
@@ -476,8 +476,37 @@ fn get_user_data(app: AppHandle) -> serde_json::Value {
 // --- 4. Window & Utility Commands ---
 #[tauri::command]
 async fn open_imgbb_window(app: AppHandle) -> Result<(), String> {
-    // 480x430 was your dev value. We pass that as the "Reference Base".
-    spawn_smart_window(&app, "imgbb-setup", "index.html?mode=imgbb", 480.0, 430.0, "ImgBB Setup")
+    if let Some(window) = app.get_webview_window("imgbb-setup") {
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    let win = WebviewWindowBuilder::new(
+        &app,
+        "imgbb-setup",
+        WebviewUrl::App("index.html?mode=imgbb".into()),
+    )
+    .title("ImgBB Setup")
+    .inner_size(480.0, 430.0)
+    .resizable(false)
+    .minimizable(false)
+    .maximizable(false)
+    .always_on_top(true)
+    .center()
+    .build()
+    .map_err(|e| e.to_string())?;
+    let app_handle = app.clone();
+    win.on_window_event(move |event| {
+        match event {
+            WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed => {
+                println!("ImgBB window closed/destroyed event detected");
+                let _ = app_handle.emit("imgbb-popup-closed", ());
+            }
+            _ => {}
+        }
+    });
+    Ok(())
+    
 }
 
 #[tauri::command]
@@ -607,32 +636,13 @@ pub fn run() {
                     let _ = handle.emit("image-path", path);
                 }
             }
-            // --- GEM 1 & 2 IMPLEMENTATION: Smart Main Window Launch ---
-            
-            // 1. Determine "Onboarding Page" vs "Chat Page"
-            // We check if 'profile.json' exists.
-            let config_dir = get_app_config_dir(&handle);
-            let has_profile = config_dir.join("profile.json").exists();
-            let has_gemini = config_dir.join("gemini_key.json").exists();
-            
-            // If we have auth, we are in "Chat Mode" (Bigger window)
-            // If missing keys, we are in "Onboarding Mode" (Smaller window)
-            let is_onboarding_page = !has_profile || !has_gemini;
 
-            let (base_w, base_h) = if is_onboarding_page {
-                (800.0, 600.0) // Onboarding Size
-            } else {
-                (900.0, 700.0) // Chat Size
-            };
-
-            // 2. Spawn the Main Window dynamically
-            // This replaces the static config in tauri.conf.json
-            spawn_smart_window(
+            spawn_app_window(
                 &handle, 
                 "main", 
                 "index.html", 
-                base_w, 
-                base_h, 
+                900.0, 
+                700.0, 
                 "spatialshot"
             ).expect("Failed to spawn main window");
 

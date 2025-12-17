@@ -58,7 +58,8 @@ export const useLens = (
   // --- Setup Listener (unchanged) ---
   useEffect(() => {
     if (!waitingForKey) return;
-    const unlistenPromise = listen<{ provider: string; key: string }>('clipboard-text', async (event) => {
+    
+    const unlistenKeyPromise = listen<{ provider: string; key: string }>('clipboard-text', async (event) => {
         const { provider, key } = event.payload;
         if (provider === 'imgbb') {
             setWaitingForKey(false);
@@ -69,7 +70,16 @@ export const useLens = (
             }
         }
     });
-    return () => { unlistenPromise.then(f => f()); };
+
+    const unlistenClosePromise = listen<void>('imgbb-popup-closed', () => {
+         console.log("Setup window closed without key");
+         setWaitingForKey(false);
+    });
+
+    return () => { 
+        unlistenKeyPromise.then(f => f()); 
+        unlistenClosePromise.then(f => f());
+    };
   }, [waitingForKey]);
 
   // --- Button Handler ---
@@ -93,6 +103,7 @@ export const useLens = (
       } else {
         await invoke("open_imgbb_window");
         setWaitingForKey(true);
+        setIsLensLoading(false);
       }
     } catch (error) {
       console.error("Lens Trigger Error:", error);

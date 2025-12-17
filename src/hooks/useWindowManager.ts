@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 // Base sizes from your Electron code
 const SIZES = {
   ONBOARDING: { w: 800, h: 600 },
-  CHAT: { w: 900, h: 700 },
+  CHAT: { w: 940, h: 680 },
 };
 
 export const useWindowManager = (
