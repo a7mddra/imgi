@@ -44,6 +44,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
   const [startupImage, setStartupImage] = useState<{
     base64: string;
     mimeType: string;
+    isFilePath?: boolean;
   } | null>(null);
 
   const [sessionLensUrl, setSessionLensUrl] = useState<string | null>(null);
@@ -102,6 +103,8 @@ export const useSystemSync = (onToggleSettings: () => void) => {
         setSystemError("Failed to load configuration.");
       }
 
+      // Image path handling is now done in AppLayout.tsx to support Zero-Copy
+      /*
       const loadImageFromPath = async (path: string) => {
         try {
           const data = await invoke<{ base64: string; mimeType: string }>(
@@ -120,6 +123,7 @@ export const useSystemSync = (onToggleSettings: () => void) => {
         loadImageFromPath(event.payload);
       });
       unlisteners.push(unlistenImage);
+      */
     };
 
     setupIpc();

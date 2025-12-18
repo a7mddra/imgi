@@ -12,7 +12,9 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
 interface WelcomeProps {
-  onImageReady: (base64: string) => void;
+  onImageReady: (
+    data: string | { path?: string; base64?: string; mimeType: string }
+  ) => void;
 }
 
 export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
@@ -33,21 +35,21 @@ export const Welcome: React.FC<WelcomeProps> = ({ onImageReady }) => {
     }
 
     try {
-      let resultBase64 = "";
+      let result: string | { path?: string; mimeType: string };
 
       // @ts-ignore - Check for path (Tauri specific)
       if (file.path) {
         // @ts-ignore
-        resultBase64 = await invoke("process_image_path", { path: file.path });
+        result = await invoke("process_image_path", { path: file.path });
       } else {
         const buffer = await file.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        resultBase64 = await invoke("process_image_bytes", {
+        result = await invoke("process_image_bytes", {
           bytes: Array.from(bytes),
         });
       }
 
-      onImageReady(resultBase64);
+      onImageReady(result);
     } catch (error) {
       console.error("Failed to process file", error);
     }

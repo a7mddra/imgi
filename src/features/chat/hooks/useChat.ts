@@ -22,7 +22,11 @@ export const useChatEngine = ({
 }: {
   apiKey: string;
   currentModel: string;
-  startupImage: { base64: string; mimeType: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   prompt: string;
   setCurrentModel: (model: string) => void;
   enabled: boolean;
@@ -55,7 +59,11 @@ export const useChatEngine = ({
   const startSession = async (
     key: string,
     modelId: string,
-    imgData: { base64: string; mimeType: string } | null,
+    imgData: {
+      base64: string;
+      mimeType: string;
+      isFilePath?: boolean;
+    } | null,
     isRetry = false
   ) => {
     setIsLoading(true);
@@ -87,9 +95,26 @@ export const useChatEngine = ({
 
       const combinedPrompt = `<sys-prmp>\n${systemPrompt}\n</sys-prmp>\nMSS: ${prompt}`;
 
+      let finalBase64 = imgData.base64;
+      if (imgData.isFilePath) {
+        try {
+          const res = await fetch(imgData.base64);
+          const blob = await res.blob();
+          finalBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.error("Failed to fetch asset for Gemini", e);
+          throw new Error("Failed to load image file.");
+        }
+      }
+
       await startNewChatStream(
         modelId,
-        imgData.base64,
+        finalBase64,
         imgData.mimeType,
         combinedPrompt,
         (token: string) => {

@@ -15,19 +15,7 @@ const getHighlighterInstance = async () => {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: ["dracula", "github-light"],
-      langs: [
-        "javascript",
-        "typescript",
-        "tsx",
-        "jsx",
-        "json",
-        "python",
-        "rust",
-        "cpp",
-        "bash",
-        "html",
-        "css",
-      ],
+      langs: [],
     });
   }
   return highlighterPromise;
@@ -64,6 +52,19 @@ const CodeBlockComponent = forwardRef<HTMLTextAreaElement, CodeBlockProps>(
       const highlight = async () => {
         try {
           const highlighter = await getHighlighterInstance();
+
+          if (
+            language &&
+            language !== "text" &&
+            !highlighter.getLoadedLanguages().includes(language)
+          ) {
+            try {
+              await highlighter.loadLanguage(language as any);
+            } catch (e) {
+              console.warn(`Failed to load language: ${language}`);
+            }
+          }
+
           const lang = highlighter.getLoadedLanguages().includes(language)
             ? language
             : "bash";

@@ -21,7 +21,8 @@ import { useUpdateCheck, getPendingUpdate } from "../../hooks/useUpdateCheck";
 import { useWindowManager } from "../../hooks/useWindowManager";
 import { exit } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { commands } from "../../lib/api/tauri/commands";
 
 export const AppLayout: React.FC = () => {
   const [isPanelActive, setIsPanelActive] = useState(false);
@@ -62,10 +63,8 @@ export const AppLayout: React.FC = () => {
       if (imagePath) {
         try {
           console.log("Event received for image:", imagePath);
-          const base64 = await invoke<string>("process_image_path", {
-            path: imagePath,
-          });
-          handleImageReady(base64);
+          const result = await commands.processImagePath(imagePath);
+          handleImageReady(result);
         } catch (error) {
           console.error("Failed to process CLI image event:", error);
         }
@@ -128,16 +127,35 @@ export const AppLayout: React.FC = () => {
     };
   }, []);
 
-  const handleImageReady = (base64Full: string) => {
-    if (!base64Full || !base64Full.includes(",")) return;
+  const handleImageReady = (
+    imageData: string | { path?: string; base64?: string; mimeType: string }
+  ) => {
+    if (typeof imageData === "string") {
+      if (!imageData || !imageData.includes(",")) return;
 
-    const [header, base64Data] = base64Full.split(",");
-    const mimeType = header.replace("data:", "").replace(";base64", "");
+      const [header, base64Data] = imageData.split(",");
+      const mimeType = header.replace("data:", "").replace(";base64", "");
 
-    system.setStartupImage({
-      base64: base64Full,
-      mimeType: mimeType,
-    });
+      system.setStartupImage({
+        base64: imageData,
+        mimeType: mimeType,
+        isFilePath: false,
+      });
+    } else {
+      if (imageData.path) {
+        system.setStartupImage({
+          base64: convertFileSrc(imageData.path),
+          mimeType: imageData.mimeType,
+          isFilePath: true,
+        });
+      } else if (imageData.base64) {
+        system.setStartupImage({
+          base64: imageData.base64,
+          mimeType: imageData.mimeType,
+          isFilePath: false,
+        });
+      }
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {

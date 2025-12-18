@@ -10,7 +10,11 @@ import { ChatBubble, StreamingResponse, Message } from "../..";
 import styles from "./ChatArea.module.css";
 
 interface ChatAreaProps {
-  startupImage: { base64: string; mimeType: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   isChatMode: boolean;
   isLoading: boolean;
   streamingText: string;
@@ -46,6 +50,17 @@ export const ChatArea = forwardRef<HTMLDivElement, ChatAreaProps>(
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8 pb-12">
             {startupImage && !isChatMode && (
               <div className="min-h-[60vh]">
+                <img
+                  src={
+                    startupImage.isFilePath
+                      ? startupImage.base64
+                      : startupImage.base64.startsWith("data:")
+                      ? startupImage.base64
+                      : `data:${startupImage.mimeType};base64,${startupImage.base64}`
+                  }
+                  alt="Analyzed content"
+                  className="mb-8 max-w-full rounded-lg shadow-md"
+                />
                 {isLoading && !streamingText ? (
                   <div className="space-y-4 pt-8" aria-hidden="true">
                     <div

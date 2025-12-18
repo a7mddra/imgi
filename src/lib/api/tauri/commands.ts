@@ -9,7 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 export const commands = {
   // Image Processing
   processImagePath: (path: string) =>
-    invoke<string>("process_image_path", { path }),
+    invoke<{ path: string; mimeType: string }>("process_image_path", { path }),
   processImageBytes: (bytes: number[]) =>
     invoke<string>("process_image_bytes", { bytes }),
   getInitialImage: () => invoke<string | null>("get_initial_image"),

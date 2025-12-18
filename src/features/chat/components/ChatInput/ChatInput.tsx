@@ -42,7 +42,11 @@ const CollapseIcon = () => (
 );
 
 interface ChatInputProps {
-  startupImage: { base64: string; mimeType: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   input: string;
   onInputChange: (value: string) => void;
   onSend: () => void;

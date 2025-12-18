@@ -22,7 +22,11 @@ export interface ChatLayoutProps {
   currentModel: string;
   editingModel: string;
 
-  startupImage: { base64: string; mimeType: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   prompt: string;
   userName: string;
   userEmail: string;

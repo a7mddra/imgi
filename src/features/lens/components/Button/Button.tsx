@@ -10,7 +10,11 @@ import { useLens } from "../..";
 
 interface LensButtonProps {
   isChatMode: boolean;
-  startupImage: { base64: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   cachedUrl: string | null;
   setCachedUrl: (url: string) => void;
 }

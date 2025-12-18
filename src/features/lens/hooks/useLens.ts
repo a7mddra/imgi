@@ -10,7 +10,11 @@ import { listen } from "@tauri-apps/api/event";
 import { uploadToImgBB, generateLensUrl } from "../services/lens.google";
 
 export const useLens = (
-  startupImage: { base64: string } | null,
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null,
   cachedUrl: string | null,
   setCachedUrl: (url: string) => void
 ) => {
@@ -22,6 +26,28 @@ export const useLens = (
     imageRef.current = startupImage;
   }, [startupImage]);
 
+  const getRealBase64 = async (img: {
+    base64: string;
+    isFilePath?: boolean;
+  }) => {
+    if (img.isFilePath) {
+      try {
+        const response = await fetch(img.base64);
+        const blob = await response.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.error("Failed to fetch local asset:", e);
+        throw e;
+      }
+    }
+    return img.base64;
+  };
+
   useEffect(() => {
     if (!startupImage || cachedUrl) return;
 
@@ -32,7 +58,8 @@ export const useLens = (
         });
         if (apiKey) {
           console.log("Background: Uploading to ImgBB...");
-          const publicUrl = await uploadToImgBB(startupImage.base64, apiKey);
+          const realBase64 = await getRealBase64(startupImage);
+          const publicUrl = await uploadToImgBB(realBase64, apiKey);
           const url = generateLensUrl(publicUrl);
           setCachedUrl(url);
         }
@@ -41,7 +68,7 @@ export const useLens = (
     prefetchLensUrl();
   }, [startupImage, cachedUrl]);
 
-  const runLensSearch = async (base64: string, key: string) => {
+  const runLensSearch = async (imgData: string, key: string) => {
     try {
       setIsLensLoading(true);
       if (cachedUrl) {
@@ -50,7 +77,13 @@ export const useLens = (
         return;
       }
 
-      const publicUrl = await uploadToImgBB(base64, key);
+      // Check if imgData looks like a URL (asset://) and fetch if needed, 
+      // but simpler to rely on caller passing real base64. 
+      // However, triggerLens calls this with startupImage.base64 which might be asset URL.
+      // So we should handle it here or ensure caller does.
+      // Let's rely on caller (triggerLens and listener).
+      
+      const publicUrl = await uploadToImgBB(imgData, key);
       const lensUrl = generateLensUrl(publicUrl);
 
       setCachedUrl(lensUrl);
@@ -71,7 +104,8 @@ export const useLens = (
           setWaitingForKey(false);
           invoke("close_imgbb_window");
           if (imageRef.current) {
-            await runLensSearch(imageRef.current.base64, key);
+             const realBase64 = await getRealBase64(imageRef.current);
+            await runLensSearch(realBase64, key);
           }
         }
       }
@@ -102,7 +136,8 @@ export const useLens = (
       const apiKey = await invoke<string>("get_api_key", { provider: "imgbb" });
 
       if (apiKey) {
-        await runLensSearch(startupImage.base64, apiKey);
+        const realBase64 = await getRealBase64(startupImage);
+        await runLensSearch(realBase64, apiKey);
       } else {
         await invoke("open_imgbb_window");
         setWaitingForKey(true);

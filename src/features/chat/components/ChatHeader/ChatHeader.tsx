@@ -39,7 +39,11 @@ interface ChatHeaderProps {
   onModelChange: (model: string) => void;
   isLoading: boolean;
   isChatMode: boolean;
-  startupImage: { base64: string; mimeType: string } | null;
+  startupImage: {
+    base64: string;
+    mimeType: string;
+    isFilePath?: boolean;
+  } | null;
   cachedUrl: string | null;
   setCachedUrl: (url: string) => void;
 }
