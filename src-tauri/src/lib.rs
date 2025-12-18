@@ -192,8 +192,16 @@ fn get_initial_image(state: State<AppState>) -> Option<String> {
 }
 
 #[tauri::command]
-fn process_image_path(path: String, state: State<AppState>) -> Result<String, String> {
-    process_and_store_image(&path, &state)
+fn process_image_path(path: String) -> Result<serde_json::Value, String> {
+    let path_buf = std::path::PathBuf::from(&path);
+    if !path_buf.exists() {
+        return Err("File does not exist".into());
+    }
+    let mime = mime_guess::from_path(&path).first_or_octet_stream().to_string();
+    Ok(serde_json::json!({
+        "path": path,
+        "mimeType": mime
+    }))
 }
 
 #[tauri::command]
@@ -511,35 +519,6 @@ fn clear_cache(app: AppHandle) {
     });
 }
 
-#[tauri::command]
-fn get_prompt() -> String {
-    "".to_string()
-}
-#[tauri::command]
-fn get_model() -> String {
-    "gemini-2.5-flash".to_string()
-}
-#[tauri::command]
-fn get_session_path() -> Option<String> {
-    None
-}
-#[tauri::command]
-fn save_prompt(_prompt: String) {}
-#[tauri::command]
-fn save_model(_model: String) {}
-#[tauri::command]
-fn set_theme(_theme: String) {}
-#[tauri::command]
-fn reset_prompt() -> String {
-    "".to_string()
-}
-#[tauri::command]
-fn reset_model() -> String {
-    "gemini-2.5-flash".to_string()
-}
-#[tauri::command]
-fn trigger_lens_search() {}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -567,15 +546,6 @@ pub fn run() {
             open_external_url,
             clear_cache,
             resize_window,
-            get_prompt,
-            get_model,
-            get_session_path,
-            save_prompt,
-            save_model,
-            set_theme,
-            reset_prompt,
-            reset_model,
-            trigger_lens_search,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

@@ -6,7 +6,6 @@
 
 import React, { createContext, useContext, ReactNode } from "react";
 import { ThemeProvider } from "./ThemeProvider";
-import { TauriProvider } from "./TauriProvider";
 
 interface AppContextType {
   ready: boolean;
